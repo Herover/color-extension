@@ -26,13 +26,15 @@
     console.log("rules", response)
     rules = response.rules;
   });
+
+  $: filteredRules = rules.filter(r => r.properties.length != 0);
 </script>
 
 <main>
   <button on:click="{selectItem}">Select item</button>
   <button on:click="{updateRules}">Get rules</button>
   <ul>
-    {#each rules as rule}
+    {#each filteredRules as rule}
       <li>{rule.selector} {rule.properties.length}
       <ul>
         {#each rule.properties as property}
