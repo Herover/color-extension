@@ -34,7 +34,7 @@ chrome.runtime.onMessage.addListener(
       isSelecting = true;
 
       sendResponse({ res: "ok" });
-    } else if (request.action === "getRules") {
+    } else if (request.action === "updateRules") {
       let r=document.querySelector(":root")
       let s=getComputedStyle(r)
       let defs = [];

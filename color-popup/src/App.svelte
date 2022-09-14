@@ -12,9 +12,9 @@
     //testData = JSON.stringify(response);
   };
 
-  const getRules = async () => {
+  const updateRules = async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const response = await chrome.tabs.sendMessage(tab.id, { action: "getRules" });
+    const response = await chrome.tabs.sendMessage(tab.id, { action: "updateRules" });
 
     console.log("response", response);
     rules = response.rules;
@@ -30,7 +30,7 @@
 
 <main>
   <button on:click="{selectItem}">Select item</button>
-  <button on:click="{getRules}">Get rules</button>
+  <button on:click="{updateRules}">Get rules</button>
   <ul>
     {#each rules as rule}
       <li>{rule.selector} {rule.properties.length}
