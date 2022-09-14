@@ -84,7 +84,7 @@ chrome.runtime.onMessage.addListener(
         } catch (error) { /* console.log("sheet", sheet, error) */ }
       }
       console.log("defs", defs);
-      sendResponse({ res: "ok" });
+      sendResponse({ res: "ok", rules: defs });
       chrome.runtime.sendMessage({ action: "rules", rules: defs });
     }
   }
