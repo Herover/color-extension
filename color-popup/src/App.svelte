@@ -36,11 +36,13 @@
   <ul>
     {#each filteredRules as rule}
       <li>{rule.selector} {rule.properties.length}
-      <ul>
-        {#each rule.properties as property}
-        <li>{property.key}: {property.value}</li>
-        {/each}
-      </ul>
+        <ul>
+          {#each rule.properties as property}
+            <li>{property.key}: {property.value}
+              <div class="color-indicator" style="background-color: {property.value}"></div>
+            </li>
+          {/each}
+        </ul>
       </li>
     {/each}
   </ul>
@@ -49,5 +51,12 @@
 <style>
   main {
     text-align: left;
+  }
+  .color-indicator {
+    height: 14px;
+    width: 42px;
+    border: 1px solid #333;
+    border-radius: 4px;
+    display: inline-block;
   }
 </style>
