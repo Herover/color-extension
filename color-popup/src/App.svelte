@@ -1,7 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import svelteLogo from './assets/svelte.svg'
-  import Counter from './lib/Counter.svelte'
+  import HSLWheel from './lib/HSLWheel.svelte'
 
   let rules = [];
   const selectItem = async () => {
@@ -20,17 +19,18 @@
     rules = response.rules;
   };
 
-  onMount(async () => {
+ /*  onMount(async () => {
     console.log("onMount")
     const response = await chrome.runtime.sendMessage({ action: "getRules" });
     console.log("rules", response)
     rules = response.rules;
-  });
+  }); */
 
   $: filteredRules = rules.filter(r => r.properties.length != 0);
 </script>
 
 <main>
+  <HSLWheel />
   <button on:click="{selectItem}">Select item</button>
   <button on:click="{updateRules}">Get rules</button>
   <ul>
