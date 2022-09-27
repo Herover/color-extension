@@ -5,11 +5,11 @@
 	export let height = 400;
 	export let width = 400;
 
+  export let angleSteps = 360;
+  export let radiusSteps = 60;
+
 	const radius = width/2;
 	const fullRadi = Math.PI * 2;
-
-	const angleSteps = 12;
-	const radiusSteps = 6;
 
 	const partRadius = 1/radiusSteps;
 	const partAngle = fullRadi / angleSteps;
