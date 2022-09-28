@@ -1,6 +1,6 @@
 <script>
   import { onMount } from 'svelte';
-  import HSLWheel from './lib/HSLWheel.svelte'
+  import ColorWheel from './lib/ColorWheel.svelte'
 
   let rules = [];
   const selectItem = async () => {
@@ -30,7 +30,7 @@
 </script>
 
 <main>
-  <HSLWheel />
+  <ColorWheel />
   <button on:click="{selectItem}">Select item</button>
   <button on:click="{updateRules}">Get rules</button>
   <ul>
