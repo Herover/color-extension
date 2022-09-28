@@ -8,6 +8,8 @@
   export let angleSteps = 360;
   export let radiusSteps = 60;
 
+	export let colors = [];
+
 	const radius = width/2;
 	const fullRadi = Math.PI * 2;
 
@@ -16,7 +18,34 @@
 
 	const angleOffset = -Math.PI/2 - partAngle/2;
 
+	/**
+	 * 
+	 * @param hue radians (0 - 2PI)
+	 * @param saturation 0 - radius
+	 */
+	const hueSaturationToX = (hue, saturation) => {
+		return radius + Math.cos(hue) * saturation;
+	};
+	/**
+	 * 
+	 * @param hue radians (0 - 2PI)
+	 * @param saturation 0 - radius
+	 */
+	const hueSaturationToY = (hue, saturation) => {
+		return radius + Math.sin(hue) * saturation;
+	};
 
+	$: computedColors = colors.map(e => {
+		const chromaColor = chroma(e.color);
+		// Note: black, gray, white will have hue NaN
+		const [hue, saturation] = chromaColor.hsl();
+		
+		return {
+			x: hueSaturationToX((hue || 0) * (Math.PI/180) + angleOffset, radius * saturation),
+			y: hueSaturationToY((hue || 0) * (Math.PI/180) + angleOffset, radius * saturation),
+			color: e.color,
+		};
+	});
 
 	let canvas;
 	onMount(() => {
@@ -34,6 +63,11 @@
 				);
 				const hslColor = hsvColor.css("hsl");
 
+				const angle1 = angleOffset + partAngle * angleStep;
+				const angle2 = angleOffset + partAngle * (angleStep + 1);
+				const mul1 = radius * (partRadius * (radiusStep));
+				const mul2 = radius * (partRadius * (radiusStep + 1));
+
 				ctx.fillStyle = hslColor;
 				ctx.strokeStyle = hsvColor;
 
@@ -42,26 +76,27 @@
 				ctx.arc(
 					width/2,
 					height/2,
-					radius * (partRadius * (radiusStep)),
-					angleOffset + partAngle * angleStep,
-					angleOffset + partAngle * (angleStep + 1),
+					mul1,
+					angle1,
+					angle2,
 					false,
 				);
 				ctx.lineTo(
-					radius + Math.cos(angleOffset + partAngle * (angleStep + 1)) * radius * (partRadius * (radiusStep + 1)),
-					radius + Math.sin(angleOffset + partAngle * (angleStep + 1)) * radius * (partRadius * (radiusStep + 1)),
+					hueSaturationToX(angle2, mul2),
+					//radius + Math.cos(angleOffset + partAngle * (angleStep + 1)) * radius * (partRadius * (radiusStep + 1)),
+					hueSaturationToY(angle2, mul2),
 				);
 				ctx.arc(
 					width/2,
 					height/2,
-					radius * (partRadius * (radiusStep + 1)),
-					angleOffset + partAngle * (angleStep + 1),
-					angleOffset + partAngle * angleStep,
+					mul2,
+					angle2,
+					angle1,
 					true,
 				);
 				ctx.lineTo(
-					radius + Math.cos(angleOffset + partAngle * angleStep) * radius * (partRadius * (radiusStep)),
-					radius + Math.sin(angleOffset + partAngle * angleStep) * radius * (partRadius * (radiusStep)),
+					hueSaturationToX(angle1, mul1),
+					hueSaturationToY(angle1, mul1),
 				);
 				
 				ctx.fill();
@@ -72,4 +107,29 @@
 	
 </script>
 
-<canvas width="{width}px" height="{height}px" bind:this={canvas}></canvas>
+<div class="circle-holder">
+	<canvas width="{width}px" height="{height}px" bind:this={canvas}></canvas>
+	<svg width="{width}px" height="{height}px">
+		{#each computedColors as color}
+			<circle
+				cx="{color.x}"
+				cy="{color.y}"
+				r="10"
+				stroke="black"
+				fill="{color.color}"
+			></circle>
+		{/each}
+	</svg>
+</div>
+
+<style>
+	svg {
+		position: absolute;
+		top: 0px;
+		left: 0px;
+	}
+
+	.circle-holder {
+		position: relative;
+	}
+</style>
