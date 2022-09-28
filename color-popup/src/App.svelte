@@ -1,6 +1,14 @@
 <script>
+  import chroma from 'chroma-js';
   import { onMount } from 'svelte';
   import ColorWheel from './lib/ColorWheel.svelte'
+  import SwatchList from './lib/SwatchList.svelte';
+
+  let swatch = [
+    { hsl: "hsl(32, 100%, 50%)", color: "#ff8800" },
+    { hsl: "hsl(210, 65.4%, 20.4%)", color: "#123456" },
+    { hsl: "hsl(0, 0%, 0%)", color: "#000000" },
+  ];
 
   let rules = [];
   const selectItem = async () => {
@@ -11,11 +19,33 @@
     //testData = JSON.stringify(response);
   };
 
+  const createSwatchFromRules = (rules) => {
+    const swatch = [];
+    rules.forEach(rule => {
+      rule.properties.forEach(property => {
+        const color = chroma(property.value).css("hsl");
+        let swatchIndex = swatch.findIndex(e => e.hsl == color);
+        if (swatchIndex == -1) {
+          swatchIndex = swatch.length;
+          swatch.push({
+            hsl: color,
+            color: property.value,
+          });
+        }
+
+        property.swatchId = swatchIndex;
+      })
+    });
+
+    return swatch;
+  };
+
   const updateRules = async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const response = await chrome.tabs.sendMessage(tab.id, { action: "updateRules" });
 
     console.log("response", response);
+    swatch = createSwatchFromRules(response.rules);
     rules = response.rules;
   };
 
@@ -30,7 +60,8 @@
 </script>
 
 <main>
-  <ColorWheel />
+  <ColorWheel colors="{swatch}"/>
+  <SwatchList swatch={swatch}/>
   <button on:click="{selectItem}">Select item</button>
   <button on:click="{updateRules}">Get rules</button>
   <ul>
@@ -38,7 +69,7 @@
       <li>{rule.selector} {rule.properties.length}
         <ul>
           {#each rule.properties as property}
-            <li>{property.key}: {property.value}
+            <li>{property.key}: {property.value} ({property.swatchId})
               <div class="color-indicator" style="background-color: {property.value}"></div>
             </li>
           {/each}
