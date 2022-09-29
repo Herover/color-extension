@@ -67,11 +67,11 @@
 </script>
 
 <main>
-  <ColorWheel colors="{swatch}"/>
-  <SwatchList swatch={swatch}/>
   <button on:click="{selectItem}">Select item</button>
   <button on:click="{updateRules}">Get rules</button>
   <button on:click="{removeData}">Clear store</button>
+  <ColorWheel colors="{swatch}"/>
+  <SwatchList swatch={swatch}/>
   <ul>
     {#each filteredRules as rule}
       <li>{rule.selector} {rule.properties.length}
