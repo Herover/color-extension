@@ -49,7 +49,6 @@
 
 	let canvas;
 	onMount(() => {
-		console.log("mounted")
 		let ctx = canvas.getContext('2d');
 
 		for (let angleStep = 0; angleStep < angleSteps; angleStep++) {
