@@ -3,6 +3,7 @@
   import { onMount } from 'svelte';
   import ColorWheel from './lib/ColorWheel.svelte'
   import SwatchList from './lib/SwatchList.svelte';
+  import * as storage from './lib/storage';
 
   let swatch = [
     { hsl: "hsl(32, 100%, 50%)", color: "#ff8800" },
@@ -47,14 +48,20 @@
     console.log("response", response);
     swatch = createSwatchFromRules(response.rules);
     rules = response.rules;
+    storage.setValue(storage.RULES, rules);
+    storage.setValue(storage.SWATCH, swatch);
   };
 
- /*  onMount(async () => {
-    console.log("onMount")
-    const response = await chrome.runtime.sendMessage({ action: "getRules" });
-    console.log("rules", response)
-    rules = response.rules;
-  }); */
+  const removeData = async () => {
+    storage.clear(storage.RULES);
+    storage.clear(storage.SWATCH);
+  }
+
+  onMount(async () => {
+    const data = await storage.getValues([ storage.RULES, storage.SWATCH ]);
+    rules = data[storage.RULES] || rules;
+    swatch = data[storage.SWATCH] || swatch;
+  });
 
   $: filteredRules = rules.filter(r => r.properties.length != 0);
 </script>
@@ -64,6 +71,7 @@
   <SwatchList swatch={swatch}/>
   <button on:click="{selectItem}">Select item</button>
   <button on:click="{updateRules}">Get rules</button>
+  <button on:click="{removeData}">Clear store</button>
   <ul>
     {#each filteredRules as rule}
       <li>{rule.selector} {rule.properties.length}
