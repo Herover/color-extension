@@ -68,7 +68,7 @@
 				const mul2 = radius * (partRadius * (radiusStep + 1));
 
 				ctx.fillStyle = hslColor;
-				ctx.strokeStyle = hsvColor;
+				ctx.strokeStyle = hslColor;
 
 				ctx.beginPath();
 
