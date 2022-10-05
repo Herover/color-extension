@@ -7,5 +7,6 @@ export default defineConfig({
   build: {
     outDir: "../chrome/dist/popup",
     emptyOutDir: true,
+    sourcemap: true,
   }
 })
