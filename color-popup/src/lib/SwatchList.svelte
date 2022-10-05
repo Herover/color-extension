@@ -4,6 +4,7 @@
 
   export let swatch = [];
   $: sortedSwatch = swatch
+    .map(e => e) // Shallow-copy to avoid mutating original value
     .sort((a, b) => {
       const aHSL = chroma(a.color).hsl();
       const bHSL = chroma(b.color).hsl();
