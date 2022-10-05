@@ -43,6 +43,7 @@
 
           const color2 = chroma(item2.color);
 
+          // Ignore comparing colors with transparency
           if (color2.alpha() !== 1) {
             return;
           }

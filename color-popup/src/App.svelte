@@ -51,6 +51,16 @@
     storage.setValue(storage.RULES, rules);
     storage.setValue(storage.SWATCH, swatch);
   };
+  const updateVariables = async () => {
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const response = await chrome.tabs.sendMessage(tab.id, { action: "updateVariables" });
+
+    console.log("response", response);
+    swatch = createSwatchFromRules(response.rules);
+    rules = response.rules;
+    storage.setValue(storage.RULES, rules);
+    storage.setValue(storage.SWATCH, swatch);
+  };
 
   const removeData = async () => {
     storage.clear(storage.RULES);
@@ -69,6 +79,7 @@
 <main>
   <button on:click="{selectItem}">Select item</button>
   <button on:click="{updateRules}">Get rules</button>
+  <button on:click="{updateVariables}">Get variables only</button>
   <button on:click="{removeData}">Clear store</button>
   <ColorWheel colors="{swatch}"/>
   <SwatchList swatch={swatch}/>

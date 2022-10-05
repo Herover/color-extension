@@ -35,57 +35,15 @@ chrome.runtime.onMessage.addListener(
 
       sendResponse({ res: "ok" });
     } else if (request.action === "updateRules") {
-      let r=document.querySelector(":root")
-      let s=getComputedStyle(r)
-      let defs = [];
-      for (var i = 0; i < document.styleSheets.length; i++) {
-        const sheet = document.styleSheets[i];
-        try {
-          for (var j = 0; j < sheet.cssRules.length; j++) {
-            const rule = sheet.cssRules[j];
-            const group = {
-              selector: rule.selectorText,
-              source: sheet.href,
-              properties: [],
-            };
-            // console.log(rule)
-            try {
-              if (rule.style) {
-                for (var k = 0; k < rule.style.length; k++) {
-                  const styleKey = rule.style[k];
-                  const value = rule.style.getPropertyValue(styleKey);
-                  if (/* styleKey.startsWith('--') && */ isColor(value)) {
-                    group.properties.push({
-                      key: styleKey,
-                      value,
-                    });
-                  }
-                }
-              }
-              // Consider if looping cssRules (CSSMediaRule) is useful
-              /* else if (rule.cssRules) {
-                for (var k = 0; k < rule.cssRules.length; k++) {
-                  for (var l = 0; l < rule.cssRules[k].style.length; l++) {
-                    const styleKey = rule.cssRules[k].style[l];
-                    const value = s.getPropertyValue(styleKey);
-                    if (styleKey.startsWith('--') && isColor(value)) {
-                      variables.push({
-                        key: styleKey,
-                        value,
-                      });
-                    }
-                  }
-                }
-              } */
-            } catch (error) { /* console.warn("rule", error) */ }
-
-            defs.push(group);
-          }
-        } catch (error) { /* console.log("sheet", sheet, error) */ }
-      }
+      const defs = getCSSRules((key, val) => isColor(val));
       console.log("defs", defs);
       sendResponse({ res: "ok", rules: defs });
-      chrome.runtime.sendMessage({ action: "rules", rules: defs });
+      //chrome.runtime.sendMessage({ action: "rules", rules: defs });
+    } else if (request.action === "updateVariables") {
+      const defs = getCSSRules((key, val) => key.startsWith('--') && isColor(val));
+      console.log("defs", defs);
+      sendResponse({ res: "ok", rules: defs });
+      //chrome.runtime.sendMessage({ action: "rules", rules: defs });
     }
   }
 );
@@ -125,3 +83,56 @@ function selectElementClick(event) {
 window.addEventListener("mouseout", selectElementMouseOut);
 window.addEventListener("mouseover", selectElementMouseOver);
 window.addEventListener("click", selectElementClick);
+
+function getCSSRules(filterFn) {
+  let r=document.querySelector(":root")
+  let s=getComputedStyle(r)
+  let defs = [];
+  for (var i = 0; i < document.styleSheets.length; i++) {
+    const sheet = document.styleSheets[i];
+    try {
+      for (var j = 0; j < sheet.cssRules.length; j++) {
+        const rule = sheet.cssRules[j];
+        const group = {
+          selector: rule.selectorText,
+          source: sheet.href,
+          properties: [],
+        };
+        // console.log(rule)
+        try {
+          if (rule.style) {
+            for (var k = 0; k < rule.style.length; k++) {
+              const styleKey = rule.style[k];
+              const value = rule.style.getPropertyValue(styleKey);
+              if (filterFn(styleKey, value)) {
+                group.properties.push({
+                  key: styleKey,
+                  value,
+                });
+              }
+            }
+          }
+          // Consider if looping cssRules (CSSMediaRule) is useful
+          /* else if (rule.cssRules) {
+            for (var k = 0; k < rule.cssRules.length; k++) {
+              for (var l = 0; l < rule.cssRules[k].style.length; l++) {
+                const styleKey = rule.cssRules[k].style[l];
+                const value = s.getPropertyValue(styleKey);
+                if (styleKey.startsWith('--') && isColor(value)) {
+                  variables.push({
+                    key: styleKey,
+                    value,
+                  });
+                }
+              }
+            }
+          } */
+        } catch (error) { /* console.warn("rule", error) */ }
+
+        defs.push(group);
+      }
+    } catch (error) { /* console.log("sheet", sheet, error) */ }
+  }
+
+  return defs;
+}
