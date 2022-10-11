@@ -31,6 +31,7 @@
           swatch.push({
             hsl: color,
             color: property.value,
+            id: swatchIndex,
           });
         }
 

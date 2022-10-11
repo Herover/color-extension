@@ -1,14 +1,37 @@
 <script>
 	import { onMount } from 'svelte';
 	import chroma from "chroma-js";
+	import ColorWheelCircle from './ColorWheelCircle.svelte';
 
 	export let height = 400;
 	export let width = 400;
+
+	let movingItem = null;
 
   export let angleSteps = 360;
   export let radiusSteps = 60;
 
 	export let colors = [];
+
+	const startSwatchItemMove = (event) => {
+		movingItem = computedColors.findIndex(e => e.id == event.detail.id);
+	};
+	const endSwatchItemMove = (event) => {
+		movingItem = null;
+	}
+	const updatePosition = (event) => {
+		if (movingItem) {
+			const rect = event.currentTarget.getBoundingClientRect();
+			// computedColors has to be modified directly to svelte to pich changes up
+			computedColors[movingItem].x = event.clientX - rect.left;
+			computedColors[movingItem].y = event.clientY - rect.top;
+			const color = chroma(computedColors[movingItem].color);
+			const [hue, saturation] = xyToHueSaturation(computedColors[movingItem].x, computedColors[movingItem].y);
+			computedColors[movingItem].color = `hsl(${hue}, ${saturation*100}%, ${color.hsl()[2]*100}%)`
+		}
+
+		return false;
+	}
 
 	const radius = width/2;
 	const fullRadi = Math.PI * 2;
@@ -35,6 +58,21 @@
 		return radius + Math.sin(hue) * saturation;
 	};
 
+	const xyToHueSaturation = (x, y) => {
+		let dx = x - radius;
+		let dy = y - radius;
+		let dist = Math.sqrt(Math.pow(dx, 2) + Math.pow(dy, 2));
+		let saturation = dist/radius;
+		// hue_rad = acos(dot(<x, y>, <0, radius>) / (|<x, y>| * |<0, radius>|))
+		let hue =
+			Math.acos(
+				(dx * 0 + dy * -radius)
+				/
+				(dist * radius)
+			) * (180 / Math.PI);
+		return [ dx < 0 ? 360 - hue : hue, saturation ];
+	}
+
 	$: computedColors = colors.map(e => {
 		const chromaColor = chroma(e.color);
 		// Note: black, gray, white will have hue NaN
@@ -44,6 +82,7 @@
 			x: hueSaturationToX((hue || 0) * (Math.PI/180) + angleOffset, radius * saturation),
 			y: hueSaturationToY((hue || 0) * (Math.PI/180) + angleOffset, radius * saturation),
 			color: e.color,
+			id: e.id,
 		};
 	});
 
@@ -108,15 +147,20 @@
 
 <div class="circle-holder">
 	<canvas width="{width}px" height="{height}px" bind:this={canvas}></canvas>
-	<svg width="{width}px" height="{height}px">
+	<svg
+		width="{width}px"
+		height="{height}px"
+		on:mousemove="{updatePosition}"
+	>
 		{#each computedColors as color}
-			<circle
-				cx="{color.x}"
-				cy="{color.y}"
-				r="10"
-				stroke="black"
-				fill="{color.color}"
-			></circle>
+			<ColorWheelCircle
+				color="{color.color}"
+				id="{color.id}"
+				x="{color.x}"
+				y="{color.y}"
+				on:move="{startSwatchItemMove}"
+				on:stop="{endSwatchItemMove}"
+			/>
 		{/each}
 	</svg>
 </div>
