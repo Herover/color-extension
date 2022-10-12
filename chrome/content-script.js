@@ -35,15 +35,19 @@ chrome.runtime.onMessage.addListener(
 
       sendResponse({ res: "ok" });
     } else if (request.action === "updateRules") {
-      const defs = getCSSRules((key, val) => isColor(val));
+      const defs = getCSSRules((key, val) => isColor(val.toLowerCase().trim()));
       console.log("defs", defs);
       sendResponse({ res: "ok", rules: defs });
       //chrome.runtime.sendMessage({ action: "rules", rules: defs });
     } else if (request.action === "updateVariables") {
-      const defs = getCSSRules((key, val) => key.startsWith('--') && isColor(val));
+      const defs = getCSSRules((key, val) => key.startsWith('--') && isColor(val.toLowerCase().trim()));
       console.log("defs", defs);
       sendResponse({ res: "ok", rules: defs });
       //chrome.runtime.sendMessage({ action: "rules", rules: defs });
+    } else if (request.action === "setCSSRule") {
+      console.log("setCSSRule", request)
+      setCSSRule(request.selector, request.key, request.value);
+      sendResponse({ res: "ok" });
     }
   }
 );
@@ -103,7 +107,8 @@ function getCSSRules(filterFn) {
           if (rule.style) {
             for (var k = 0; k < rule.style.length; k++) {
               const styleKey = rule.style[k];
-              const value = rule.style.getPropertyValue(styleKey);
+              // FIXME: trim only important for colors?
+              const value = rule.style.getPropertyValue(styleKey).trim();
               if (filterFn(styleKey, value)) {
                 group.properties.push({
                   key: styleKey,
@@ -135,4 +140,11 @@ function getCSSRules(filterFn) {
   }
 
   return defs;
+}
+
+function setCSSRule(selector, key, value) {
+  const elements = document.querySelectorAll(selector);
+  elements.forEach(element => {
+    element.style.setProperty(key, value);
+  });
 }

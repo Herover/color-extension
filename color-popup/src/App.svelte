@@ -6,9 +6,9 @@
   import * as storage from './lib/storage';
 
   let swatch = [
-    { hsl: "hsl(32, 100%, 50%)", color: "#ff8800" },
-    { hsl: "hsl(210, 65.4%, 20.4%)", color: "#123456" },
-    { hsl: "hsl(0, 0%, 0%)", color: "#000000" },
+    // { hsl: "hsl(32, 100%, 50%)", color: "#ff8800" },
+    // { hsl: "hsl(210, 65.4%, 20.4%)", color: "#123456" },
+    // { hsl: "hsl(0, 0%, 0%)", color: "#000000" },
   ];
 
   let rules = [];
@@ -57,7 +57,7 @@
     const response = await chrome.tabs.sendMessage(tab.id, { action: "updateVariables" });
 
     console.log("response", response);
-    swatch = createSwatchFromRules(response.rules);
+    swatch = createSwatchFromRules(response.rules).sort((a, b) => chroma(b.hsl).hsl[0] - chroma(a.hsl).hsl[0]);
     rules = response.rules;
     storage.setValue(storage.RULES, rules);
     storage.setValue(storage.SWATCH, swatch);
@@ -71,10 +71,45 @@
   onMount(async () => {
     const data = await storage.getValues([ storage.RULES, storage.SWATCH ]);
     rules = data[storage.RULES] || rules;
-    swatch = data[storage.SWATCH] || swatch;
+    swatch = (data[storage.SWATCH] || swatch).sort((a, b) => chroma(b.hsl).hsl[0] - chroma(a.hsl).hsl[0]);;
   });
 
   $: filteredRules = rules.filter(r => r.properties.length != 0);
+
+  const updateSwatchItem = async (event) => {
+    const { id, hslColor } = event.detail;
+    const swatchIndex = swatch.findIndex(e => e.id == id);
+    if (swatchIndex == -1) {
+      console.warn("Updating non-existing swatch item", id, event);
+      return;
+    }
+    swatch[swatchIndex].color = hslColor;
+    swatch[swatchIndex].hsl = hslColor;
+
+    let ruleIndex = -1;
+    let propertyIndex = -1;
+    for (let groupIndex = 0; groupIndex < rules.length; groupIndex++) {
+      const ruleGroup = rules[groupIndex];
+      propertyIndex = ruleGroup.properties.findIndex(e => e.swatchId == id);
+      if (propertyIndex != -1) {
+        ruleIndex = groupIndex;
+        break;
+      }
+    }
+    if (ruleIndex == -1 || propertyIndex == -1) {
+      console.warn("Updating non-existing rule item", id, event);
+      return;
+    }
+    rules[ruleIndex].properties[propertyIndex].value = hslColor;
+
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      action: "setCSSRule",
+      selector: rules[ruleIndex].selector,
+      key: rules[ruleIndex].properties[propertyIndex].key,
+      value: rules[ruleIndex].properties[propertyIndex].value,
+    });
+  };
 </script>
 
 <main>
@@ -82,7 +117,7 @@
   <button on:click="{updateRules}">Get rules</button>
   <button on:click="{updateVariables}">Get variables only</button>
   <button on:click="{removeData}">Clear store</button>
-  <ColorWheel colors="{swatch}"/>
+  <ColorWheel colors="{swatch}" on:updateColor="{updateSwatchItem}"/>
   <SwatchList swatch={swatch}/>
   <ul>
     {#each filteredRules as rule}

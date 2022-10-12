@@ -1,33 +1,37 @@
 <script>
-	import { onMount } from 'svelte';
+	import { createEventDispatcher, onMount } from 'svelte';
 	import chroma from "chroma-js";
 	import ColorWheelCircle from './ColorWheelCircle.svelte';
 
 	export let height = 400;
 	export let width = 400;
 
-	let movingItem = null;
+	let movingItem = -1;
 
   export let angleSteps = 360;
   export let radiusSteps = 60;
 
 	export let colors = [];
 
+  const dispatch = createEventDispatcher();
+
 	const startSwatchItemMove = (event) => {
 		movingItem = computedColors.findIndex(e => e.id == event.detail.id);
 	};
 	const endSwatchItemMove = (event) => {
-		movingItem = null;
+		movingItem = -1;
 	}
 	const updatePosition = (event) => {
-		if (movingItem) {
+		if (movingItem != -1) {
 			const rect = event.currentTarget.getBoundingClientRect();
 			// computedColors has to be modified directly to svelte to pich changes up
 			computedColors[movingItem].x = event.clientX - rect.left;
 			computedColors[movingItem].y = event.clientY - rect.top;
 			const color = chroma(computedColors[movingItem].color);
 			const [hue, saturation] = xyToHueSaturation(computedColors[movingItem].x, computedColors[movingItem].y);
-			computedColors[movingItem].color = `hsl(${hue}, ${saturation*100}%, ${color.hsl()[2]*100}%)`
+			computedColors[movingItem].color = `hsl(${hue}, ${saturation*100}%, ${color.hsl()[2]*100}%)`;
+
+			dispatch("updateColor", { id: movingItem, hslColor: computedColors[movingItem].color });
 		}
 
 		return false;
