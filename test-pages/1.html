@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>For experimenting with rules</title>
+  <style>
+    :root {
+      --secondary-color: #0000ff;
+    }
+    .box {
+      width: 100px;
+      height:100px;
+      padding: 10px;
+    }
+    .primary {
+      background-color: #00ff00;
+    }
+    .secondary {
+      background-color: var(--secondary-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="box primary"></div>
+  <div class="box secondary"></div>
+</body>
+</html>
