@@ -29,7 +29,7 @@
 			computedColors[movingItem].y = event.clientY - rect.top;
 			const color = chroma(computedColors[movingItem].color);
 			const [hue, saturation] = xyToHueSaturation(computedColors[movingItem].x, computedColors[movingItem].y);
-			computedColors[movingItem].color = `hsl(${hue}, ${saturation*100}%, ${color.hsl()[2]*100}%)`;
+			computedColors[movingItem].color = `hsl(${Math.floor(hue*100)/100}, ${Math.floor(saturation*10000)/100}%, ${Math.floor(color.hsl()[2]*10000)/100}%)`;
 
 			dispatch("updateColor", { id: movingItem, hslColor: computedColors[movingItem].color });
 		}
