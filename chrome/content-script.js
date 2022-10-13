@@ -134,7 +134,9 @@ function getCSSRules(filterFn) {
           } */
         } catch (error) { /* console.warn("rule", error) */ }
 
-        defs.push(group);
+        if (group.properties.length !== 0) {
+          defs.push(group);
+        }
       }
     } catch (error) { /* console.log("sheet", sheet, error) */ }
   }
