@@ -119,19 +119,15 @@
   <button on:click="{removeData}">Clear store</button>
   <ColorWheel colors="{swatch}" on:updateColor="{updateSwatchItem}"/>
   <SwatchList swatch={swatch}/>
-  <ul>
+  <div class="code">
     {#each filteredRules as rule}
-      <li>{rule.selector} {rule.properties.length}
-        <ul>
-          {#each rule.properties as property}
-            <li>{property.key}: {property.value} ({property.swatchId})
-              <div class="color-indicator" style="background-color: {property.value}"></div>
-            </li>
-          {/each}
-        </ul>
-      </li>
+      <div class="code-line">{rule.selector} &#123;</div>
+      {#each rule.properties as property}
+        <div class="code-line">&nbsp;&nbsp;{property.key}: {property.value}; <div class="color-indicator" style="background-color: {property.value}"></div></div>
+      {/each}
+      <div class="code-line">&#125;</div>
     {/each}
-  </ul>
+  </div>
 </main>
 
 <style>
@@ -144,5 +140,10 @@
     border: 1px solid #333;
     border-radius: 4px;
     display: inline-block;
+    margin-left: 4px;
+  }
+  .code .code-line {
+    font-family: monospace;
+    width: 100%;
   }
 </style>
