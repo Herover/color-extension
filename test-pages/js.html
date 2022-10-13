@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>For experimenting with rules</title>
+  <style>
+    #colors div {
+      display: inline-block;
+      height: 100px;
+      width: 100px;
+    }
+  </style>
+</head>
+<body>
+  <button onclick="renderColors">Re-render color object</button>
+  <div id="colors"></div>
+  <pre id="color-json"></pre>
+  <script>
+    let colors = [
+      { key: "a", color: "#ff0000" },
+      { key: "b", color: "#00ff00" },
+      { key: "c", color: "#0000ff" },
+    ];
+    window.onload = () => window.postMessage(
+      {
+        COLOR_EXT: {
+          action: "register",
+          name: "test",
+          type: "ordinal",
+          colors,
+        },
+      },
+      window.origin,
+    );
+
+    window.addEventListener("message", e => {
+      if (e.data.COLOR_EXT && e.data.COLOR_EXT.action === "setColors") {
+        colors = e.data.COLOR_EXT.colors;
+        renderColors();
+      }
+    });
+
+    function renderColors() {
+      const holder = document.querySelector("#colors");
+      holder.innerHTML = "";
+      colors.forEach(color => {
+        const div = document.createElement("div");
+        div.style = `background-color:${color.color};`;
+        div.innerHTML = color.key;
+        holder.appendChild(div)
+      });
+
+      document.querySelector("#color-json").innerHTML = JSON.stringify(colors, null, 2);
+    }
+    renderColors();
+  </script>
+</body>
+</html>

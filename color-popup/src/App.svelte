@@ -75,6 +75,26 @@
     const data = await storage.getValues([ storage.RULES, storage.SWATCH ]);
     rules = data[storage.RULES] || rules;
     swatch = (data[storage.SWATCH] || swatch).sort((a, b) => chroma(b.hsl).hsl[0] - chroma(a.hsl).hsl[0]);;
+
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      action: "getMessages",
+    });
+    response.res.forEach(message => {
+      switch (message.action) {
+        case "registerOrdinal":
+          swatch = message.colors.map((color, i) => ({
+            color: color.color,
+            id: color.key,
+            hsl: chroma(color.color).css("hsl"),
+          }));
+          break;
+      
+        default:
+          console.log("Unknown message type", message);
+          break;
+      }
+    })
   });
 
   $: filteredRules = rules.filter(r => r.properties.length != 0);
@@ -89,6 +109,8 @@
     swatch[swatchIndex].color = hslColor;
     swatch[swatchIndex].hsl = hslColor;
 
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
     let ruleIndex = -1;
     let propertyIndex = -1;
     for (let groupIndex = 0; groupIndex < rules.length; groupIndex++) {
@@ -99,18 +121,24 @@
         break;
       }
     }
-    if (ruleIndex == -1 || propertyIndex == -1) {
-      console.warn("Updating non-existing rule item", id, event);
-      return;
-    }
-    rules[ruleIndex].properties[propertyIndex].value = hslColor;
+    if (ruleIndex != -1 && propertyIndex != -1) {
+      rules[ruleIndex].properties[propertyIndex].value = hslColor;
 
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: "setCSSRule",
+        selector: rules[ruleIndex].selector,
+        key: rules[ruleIndex].properties[propertyIndex].key,
+        value: rules[ruleIndex].properties[propertyIndex].value,
+      });
+    }
+
+    // TODO: Only do this if used on a javascript integrated webpage, use registration name
     const response = await chrome.tabs.sendMessage(tab.id, {
-      action: "setCSSRule",
-      selector: rules[ruleIndex].selector,
-      key: rules[ruleIndex].properties[propertyIndex].key,
-      value: rules[ruleIndex].properties[propertyIndex].value,
+      action: "setColors",
+      colors: swatch.map(s => ({
+        key: s.id,
+        color: s.color,
+      })),
     });
   };
 

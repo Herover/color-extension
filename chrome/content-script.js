@@ -22,7 +22,10 @@ function stopSelecting() {
 }
 
 chrome.runtime.onMessage.addListener(
-  function(request, sender, sendResponse) {
+  // Note: the callback should not return a Promise (so no async/await)
+  // otherwise sendResponse wont work as expected.
+  // Use callbacks and return 1 for async-ish code.
+  (request, sender, sendResponse) => {
     console.log(request.action, sender.tab ?
                 "from a content script:" + sender.tab.url :
                 "from the extension");
@@ -48,6 +51,24 @@ chrome.runtime.onMessage.addListener(
       console.log("setCSSRule", request)
       setCSSRule(request.selector, request.key, request.value);
       sendResponse({ res: "ok" });
+    } else if (request.action === "getMessages") {
+      // TODO: clean queue?
+      chrome.storage.session.get([ "messageQueue" ], (data) => {
+        sendResponse({res: data.messageQueue, "test": "YAY"});
+      });
+      return true;
+    } else if (request.action === "setColors") {
+      window.postMessage(
+        {
+          COLOR_EXT: {
+            action: "setColors",
+            name: "test",
+            type: "ordinal",
+            colors: request.colors,
+          },
+        },
+        window.origin,
+      );
     }
   }
 );
@@ -150,3 +171,24 @@ function setCSSRule(selector, key, value) {
     element.style.setProperty(key, value);
   });
 }
+
+window.addEventListener("message", async (event) => {
+  if (event.source != window) {
+    return;
+  }
+
+  if (event.data.COLOR_EXT) {
+    const data = event.data.COLOR_EXT;
+    
+    if (data.action == "register") {
+      if (data.type == "ordinal") {
+        const item = { action: "registerOrdinal", colors: data.colors, name: data.name };
+        const key = "messageQueue";
+        const storedData = await chrome.storage.session.get([key]);
+        const queue = storedData[key] || [];
+        queue.push(item);
+        const r = await chrome.storage.session.set({[ key ]: queue});
+      }
+    }
+  }
+});
