@@ -123,7 +123,7 @@
     {#each filteredRules as rule}
       <div class="code-line">{rule.selector} &#123;</div>
       {#each rule.properties as property}
-        <div class="code-line">&nbsp;&nbsp;{property.key}: {property.value}; <div class="color-indicator" style="background-color: {property.value}"></div></div>
+        <div class="code-line">&nbsp;&nbsp;{property.key}: {property.value};<div class="color-indicator" style="background-color: {property.value}"></div></div>
       {/each}
       <div class="code-line">&#125;</div>
     {/each}
