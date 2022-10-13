@@ -1,8 +1,11 @@
 <script>
     import chroma from "chroma-js";
+    import { createEventDispatcher } from "svelte";
 
+  const dispatch = createEventDispatcher();
 
   export let swatch = [];
+  export let highlighted = {};
   $: sortedSwatch = swatch
     .map(item => {
       item.lookalikes = [];
@@ -61,8 +64,14 @@
 </script>
 
 {#each sortedSwatch as swatchItem}
-  <p>
-    <span class="swatch-color" style="background-color:{swatchItem.color}"></span>
+  <p
+    class:highlight="{highlighted[swatchItem.id]}"
+    on:dblclick="{() => dispatch("highlight", { id: swatchItem.id })}"
+  >
+    <span
+      class="swatch-color"
+      style="background-color:{swatchItem.color}"
+    ></span>
     {swatchItem.hsl}
     {#if swatchItem.lookalikes.length}
       {#each swatchItem.lookalikes as lookalike}
@@ -77,5 +86,8 @@
     display: inline-block;
     height: 22px;
     width: 36px;
+  }
+  .highlight {
+    font-weight: bold;
   }
 </style>

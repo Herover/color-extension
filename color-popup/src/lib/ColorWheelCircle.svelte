@@ -6,6 +6,7 @@
   export let y;
   export let id;
   export let color;
+  export let highlight;
 
   const dispatch = createEventDispatcher();
 </script>
@@ -15,7 +16,9 @@
   cy="{y}"
   r="10"
   stroke="black"
+  stroke-width="{highlight ? '2px' : '1px'}"
   fill="{color}"
   on:mousedown="{() => dispatch("move", { id })}"
   on:mouseup={() => dispatch("stop", { id })}
+  on:dblclick="{() => dispatch("highlight", { id: id })}"
 ></circle>

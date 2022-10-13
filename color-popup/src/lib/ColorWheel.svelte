@@ -13,6 +13,8 @@
 
 	export let colors = [];
 
+	export let highlighted = {};
+
   const dispatch = createEventDispatcher();
 
 	const startSwatchItemMove = (event) => {
@@ -31,7 +33,7 @@
 			const [hue, saturation] = xyToHueSaturation(computedColors[movingItem].x, computedColors[movingItem].y);
 			computedColors[movingItem].color = `hsl(${Math.floor(hue*100)/100}, ${Math.floor(saturation*10000)/100}%, ${Math.floor(color.hsl()[2]*10000)/100}%)`;
 
-			dispatch("updateColor", { id: movingItem, hslColor: computedColors[movingItem].color });
+			dispatch("updateColor", { id: computedColors[movingItem].id, hslColor: computedColors[movingItem].color });
 		}
 
 		return false;
@@ -77,18 +79,26 @@
 		return [ dx < 0 ? 360 - hue : hue, saturation ];
 	}
 
-	$: computedColors = colors.map(e => {
-		const chromaColor = chroma(e.color);
-		// Note: black, gray, white will have hue NaN
-		const [hue, saturation] = chromaColor.hsl();
-		
-		return {
-			x: hueSaturationToX((hue || 0) * (Math.PI/180) + angleOffset, radius * saturation),
-			y: hueSaturationToY((hue || 0) * (Math.PI/180) + angleOffset, radius * saturation),
-			color: e.color,
-			id: e.id,
-		};
-	});
+	$: computedColors = colors
+		.map(e => {
+			const chromaColor = chroma(e.color);
+			// Note: black, gray, white will have hue NaN
+			const [hue, saturation] = chromaColor.hsl();
+			
+			return {
+				x: hueSaturationToX((hue || 0) * (Math.PI/180) + angleOffset, radius * saturation),
+				y: hueSaturationToY((hue || 0) * (Math.PI/180) + angleOffset, radius * saturation),
+				color: e.color,
+				id: e.id,
+				highlight: highlighted[e.id],
+			};
+		})
+		.sort((a, b) => {
+			if (a.highlight && b.highlight) return 0;
+			if (!a.highlight && b.highlight) return -1;
+			if (a.highlight && !b.highlight) return 1;
+			return 0;
+		});
 
 	let canvas;
 	onMount(() => {
@@ -162,8 +172,10 @@
 				id="{color.id}"
 				x="{color.x}"
 				y="{color.y}"
+				highlight="{color.highlight}"
 				on:move="{startSwatchItemMove}"
 				on:stop="{endSwatchItemMove}"
+				on:highlight
 			/>
 		{/each}
 	</svg>

@@ -12,6 +12,9 @@
   ];
 
   let rules = [];
+
+  let highlightedSwatchItems = {};
+
   const selectItem = async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const response = await chrome.tabs.sendMessage(tab.id, { action: "getElement" });
@@ -110,6 +113,14 @@
       value: rules[ruleIndex].properties[propertyIndex].value,
     });
   };
+
+  const toggleHighlight = (event) => {
+    if (highlightedSwatchItems[event.detail.id]) {
+      highlightedSwatchItems[event.detail.id] = false;
+    } else {
+      highlightedSwatchItems[event.detail.id] = true;
+    }
+  };
 </script>
 
 <main>
@@ -117,13 +128,28 @@
   <button on:click="{updateRules}">Get rules</button>
   <button on:click="{updateVariables}">Get variables only</button>
   <button on:click="{removeData}">Clear store</button>
-  <ColorWheel colors="{swatch}" on:updateColor="{updateSwatchItem}"/>
-  <SwatchList swatch={swatch}/>
+  <ColorWheel
+    colors="{swatch}"
+    highlighted="{highlightedSwatchItems}"
+    on:updateColor="{updateSwatchItem}"
+    on:highlight="{toggleHighlight}"
+  />
+  <SwatchList
+    swatch={swatch}
+    highlighted="{highlightedSwatchItems}"
+    on:highlight="{toggleHighlight}"
+  />
   <div class="code">
     {#each filteredRules as rule}
       <div class="code-line">{rule.selector} &#123;</div>
       {#each rule.properties as property}
-        <div class="code-line">&nbsp;&nbsp;{property.key}: {property.value};<div class="color-indicator" style="background-color: {property.value}"></div></div>
+        <div
+          class="code-line"
+          class:highlight="{highlightedSwatchItems[property.swatchId]}"
+          on:dblclick={() => toggleHighlight({detail: { id: property.swatchId }})}
+        >
+        &nbsp;&nbsp;{property.key}: {property.value};<div class="color-indicator" style="background-color: {property.value}"></div>
+      </div>
       {/each}
       <div class="code-line">&#125;</div>
     {/each}
@@ -141,6 +167,12 @@
     border-radius: 4px;
     display: inline-block;
     margin-left: 4px;
+  }
+  .highlight .color-indicator {
+    border: 2px solid #333;
+  }
+  .code-line.highlight {
+    font-weight: bold;
   }
   .code .code-line {
     font-family: monospace;
