@@ -31,7 +31,12 @@
 			computedColors[movingItem].y = event.clientY - rect.top;
 			const color = chroma(computedColors[movingItem].color);
 			const [hue, saturation] = xyToHueSaturation(computedColors[movingItem].x, computedColors[movingItem].y);
-			computedColors[movingItem].color = `hsl(${Math.floor(hue*100)/100}, ${Math.floor(saturation*10000)/100}%, ${Math.floor(color.hsl()[2]*10000)/100}%)`;
+			const hslString = `${Math.floor(hue*100)/100}, ${Math.floor(saturation*10000)/100}%, ${Math.floor(color.hsl()[2]*10000)/100}%`;
+			if (color.alpha() !== 1) {
+				computedColors[movingItem].color = `hsla(${hslString},${color.alpha()})`;
+			} else {
+				computedColors[movingItem].color = `hsl(${hslString})`;
+			}
 
 			dispatch("updateColor", { id: computedColors[movingItem].id, hslColor: computedColors[movingItem].color });
 		}
