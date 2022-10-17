@@ -1,6 +1,6 @@
 <script>
   import chroma from 'chroma-js';
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import ColorWheel from './lib/ColorWheel.svelte'
   import SwatchList from './lib/SwatchList.svelte';
   import * as storage from './lib/storage';
@@ -12,6 +12,8 @@
   ];
 
   let rules = [];
+
+  let ordinalScale = [];
 
   let highlightedSwatchItems = {};
 
@@ -69,32 +71,44 @@
   const removeData = async () => {
     storage.clear(storage.RULES);
     storage.clear(storage.SWATCH);
+    storage.clear(storage.ORDINAL);
   }
 
   onMount(async () => {
-    const data = await storage.getValues([ storage.RULES, storage.SWATCH ]);
+    const data = await storage.getValues([ storage.RULES, storage.SWATCH, storage.ORDINAL ]);
     rules = data[storage.RULES] || rules;
     swatch = (data[storage.SWATCH] || swatch).sort((a, b) => chroma(b.hsl).hsl[0] - chroma(a.hsl).hsl[0]);;
+    ordinalScale = data[storage.ORDINAL] || ordinalScale;
 
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const response = await chrome.tabs.sendMessage(tab.id, {
       action: "getMessages",
     });
-    response.res.forEach(message => {
-      switch (message.action) {
-        case "registerOrdinal":
-          swatch = message.colors.map((color, i) => ({
-            color: color.color,
-            id: color.key,
-            hsl: chroma(color.color).css("hsl"),
-          }));
-          break;
-      
-        default:
-          console.log("Unknown message type", message);
-          break;
-      }
-    })
+    if (response.res && response.res.length != 0) {
+      response.res.forEach(message => {
+        switch (message.action) {
+          case "registerOrdinal":
+            ordinalScale = message.colors;
+            swatch = message.colors.map((color, i) => ({
+              color: color.color,
+              id: color.key,
+              hsl: chroma(color.color).css("hsl"),
+            }));
+            break;
+        
+          default:
+            console.log("Unknown message type", message);
+            break;
+        }
+      });
+    }
+
+    // FIXME: data seems to gete deleted unless saved at least once?
+    return Promise.all([
+      storage.setValue(storage.RULES, rules),
+      storage.setValue(storage.SWATCH, swatch),
+      storage.setValue(storage.ORDINAL, ordinalScale),
+    ]);
   });
 
   $: filteredRules = rules.filter(r => r.properties.length != 0);
@@ -140,6 +154,11 @@
         color: s.color,
       })),
     });
+
+
+    storage.setValue(storage.RULES, rules);
+    storage.setValue(storage.SWATCH, swatch);
+    storage.setValue(storage.ORDINAL, ordinalScale);
   };
 
   const toggleHighlight = (event) => {

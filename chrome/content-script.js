@@ -55,6 +55,7 @@ chrome.runtime.onMessage.addListener(
       // TODO: clean queue?
       chrome.storage.session.get([ "messageQueue" ], (data) => {
         sendResponse({res: data.messageQueue, "test": "YAY"});
+        chrome.storage.session.clear([ "messageQueue" ]);
       });
       return true;
     } else if (request.action === "setColors") {

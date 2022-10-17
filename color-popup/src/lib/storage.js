@@ -1,5 +1,6 @@
 export const SWATCH = "SWATCH";
 export const RULES = "RULES";
+export const ORDINAL = "ORDINAL";
 
 export const getValues = async (keys) => {
   if (chrome?.storage?.session) {
