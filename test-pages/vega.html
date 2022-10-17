@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Hoteller før og under COVID19</title>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <script src="https://cdn.jsdelivr.net/npm/vega@5.21.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-lite@5.2.0"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vega-embed@6.20.2"></script>
+
+  </head>
+  <body>
+    <div id="grouped_bar"></div>
+
+    <script>
+      let colors = [
+        { key: "a", color: "#ff0000" },
+        { key: "b", color: "#00ff00" },
+        { key: "c", color: "#0000ff" },
+      ];
+      window.onload = () => window.postMessage(
+        {
+          COLOR_EXT: {
+            action: "register",
+            name: "test",
+            type: "ordinal",
+            colors,
+          },
+        },
+        window.origin,
+      );
+  
+      window.addEventListener("message", e => {
+        if (
+          // Messages from extension content script has same origin as window,
+          // check to avoid messages from less trusted sources
+          e.origin == window.origin
+          && e.data.COLOR_EXT
+          && e.data.COLOR_EXT.action === "setColors"
+        ) {
+          console.log(e);
+          colors = e.data.COLOR_EXT.colors;
+          render();
+        }
+      });
+
+      render();
+
+      function render() {
+        vegaEmbed(
+          "#grouped_bar",
+          // Based on https://vega.github.io/vega-lite/examples/bar_grouped.html
+          {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {
+              "values": [
+                {"category":"A", "group": "x", "value":0.1},
+                {"category":"A", "group": "y", "value":0.6},
+                {"category":"A", "group": "z", "value":0.9},
+                {"category":"B", "group": "x", "value":0.7},
+                {"category":"B", "group": "y", "value":0.2},
+                {"category":"B", "group": "z", "value":1.1},
+                {"category":"C", "group": "x", "value":0.6},
+                {"category":"C", "group": "y", "value":0.1},
+                {"category":"C", "group": "z", "value":0.2}
+              ]
+            },
+            "mark": "bar",
+            "encoding": {
+              "x": {"field": "category"},
+              "y": {"field": "value", "type": "quantitative"},
+              "xOffset": {"field": "group"},
+              "color": {
+                "field": "group",
+                "scale": {
+                  "range": colors.map(e => e.color)
+                }
+              }
+            }
+          },
+          { renderer: "svg", actions: false },
+        );
+      }
+    </script>
+  </body>
+</html>
