@@ -36,7 +36,13 @@
     );
 
     window.addEventListener("message", e => {
-      if (e.data.COLOR_EXT && e.data.COLOR_EXT.action === "setColors") {
+      if (
+        // Messages from extension content script has same origin as window,
+        // check to avoid messages from less trusted sources
+        e.origin == window.origin
+        && e.data.COLOR_EXT
+        && e.data.COLOR_EXT.action === "setColors"
+      ) {
         colors = e.data.COLOR_EXT.colors;
         renderColors();
       }
