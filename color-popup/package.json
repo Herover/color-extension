@@ -9,10 +9,16 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@rollup/plugin-typescript": "^9.0.2",
     "@sveltejs/vite-plugin-svelte": "^1.0.2",
+    "@tsconfig/svelte": "^3.0.0",
     "@types/chroma-js": "^2.1.4",
     "@types/chrome": "^0.0.196",
     "svelte": "^3.49.0",
+    "svelte-check": "^2.9.2",
+    "svelte-preprocess": "^4.10.7",
+    "tslib": "^2.4.0",
+    "typescript": "^4.8.4",
     "vite": "^3.1.0"
   },
   "dependencies": {

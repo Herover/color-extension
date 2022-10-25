@@ -1,9 +1,16 @@
 import { defineConfig } from 'vite'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
+import autoPreprocess from 'svelte-preprocess';
+import typescript from '@rollup/plugin-typescript';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [
+    svelte({
+      preprocess: autoPreprocess(),
+    }),
+    typescript({ sourceMap: true }),
+  ],
   build: {
     outDir: "../chrome/dist/popup",
     emptyOutDir: true,
