@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
     import { createEventDispatcher } from "svelte";
 
 
@@ -8,7 +8,11 @@
   export let color;
   export let highlight;
 
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{
+    highlight: HighlightEvent,
+    move: ColorCircleMoveEvent,
+    stop: ColorCircleStopMoveEvent
+  }>();
 </script>
 
 <circle

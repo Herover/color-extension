@@ -2,7 +2,7 @@ export const SWATCH = "SWATCH";
 export const RULES = "RULES";
 export const ORDINAL = "ORDINAL";
 
-export const getValues = async (keys) => {
+export const getValues = async (keys: string[]) => {
   if (chrome?.storage?.session) {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const data = await chrome.storage.session.get(keys.map(key => `${tab.id} - ${key}`));
@@ -16,10 +16,10 @@ export const getValues = async (keys) => {
   } else {
     console.warn("Storage not available");
   }
-  return new Promise((resolve) => resolve());
+  return new Promise((resolve, reject) => reject("Storage not available"));
 };
 
-export const setValue = async (key, value) => {
+export const setValue = async (key: string, value: any) => {
   if (chrome?.storage?.session) {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     // JSON.stringify is more space performant than whatever .set uses
@@ -27,10 +27,10 @@ export const setValue = async (key, value) => {
   } else {
     console.warn("Storage not available");
   }
-  return new Promise((resolve) => resolve());
+  return new Promise((resolve, reject) => reject("Storage not available"));
 };
 
-export const clear = async (key) => {
+export const clear = async (key: string) => {
   // TODO: remove
   await chrome.storage.session.clear();
   if (chrome?.storage?.session) {
@@ -39,5 +39,5 @@ export const clear = async (key) => {
   } else {
     console.warn("Storage not available");
   }
-  return new Promise((resolve) => resolve());
+  return new Promise((resolve, reject) => reject("Storage not available"));
 };

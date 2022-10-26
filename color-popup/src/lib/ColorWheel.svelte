@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { createEventDispatcher, onMount } from 'svelte';
 	import chroma from "chroma-js";
 	import ColorWheelCircle from './ColorWheelCircle.svelte';
@@ -15,12 +15,12 @@
 
 	export let highlighted = {};
 
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{ updateColor: UpdateColorEvent, highlight: HighlightEvent }>();
 
-	const startSwatchItemMove = (event) => {
+	const startSwatchItemMove = (event: CustomEvent<ColorCircleMoveEvent>) => {
 		movingItem = computedColors.findIndex(e => e.id == event.detail.id);
 	};
-	const endSwatchItemMove = (event) => {
+	const endSwatchItemMove = (event: CustomEvent<ColorCircleStopMoveEvent>) => {
 		movingItem = -1;
 	}
 	const updatePosition = (event) => {

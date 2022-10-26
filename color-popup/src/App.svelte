@@ -1,17 +1,17 @@
-<script>
+<script lang="ts">
   import chroma from 'chroma-js';
   import { onDestroy, onMount } from 'svelte';
   import ColorWheel from './lib/ColorWheel.svelte'
   import SwatchList from './lib/SwatchList.svelte';
   import * as storage from './lib/storage';
 
-  let swatch = [
+  let swatch: Swatch[] = [
     // { hsl: "hsl(32, 100%, 50%)", color: "#ff8800" },
     // { hsl: "hsl(210, 65.4%, 20.4%)", color: "#123456" },
     // { hsl: "hsl(0, 0%, 0%)", color: "#000000" },
   ];
 
-  let rules = [];
+  let rules: Rule[] = [];
 
   let ordinalScale = [];
 
@@ -113,7 +113,7 @@
 
   $: filteredRules = rules.filter(r => r.properties.length != 0);
 
-  const updateSwatchItem = async (event) => {
+  const updateSwatchItem = async (event: CustomEvent<UpdateColorEvent>) => {
     const { id, hslColor } = event.detail;
     const swatchIndex = swatch.findIndex(e => e.id == id);
     if (swatchIndex == -1) {
@@ -161,11 +161,11 @@
     storage.setValue(storage.ORDINAL, ordinalScale);
   };
 
-  const toggleHighlight = (event) => {
-    if (highlightedSwatchItems[event.detail.id]) {
-      highlightedSwatchItems[event.detail.id] = false;
+  const toggleHighlight = (id: string) => {
+    if (highlightedSwatchItems[id]) {
+      highlightedSwatchItems[id] = false;
     } else {
-      highlightedSwatchItems[event.detail.id] = true;
+      highlightedSwatchItems[id] = true;
     }
   };
 </script>
@@ -179,12 +179,12 @@
     colors="{swatch}"
     highlighted="{highlightedSwatchItems}"
     on:updateColor="{updateSwatchItem}"
-    on:highlight="{toggleHighlight}"
+    on:highlight="{(e) => toggleHighlight(e.detail.id)}"
   />
   <SwatchList
     swatch={swatch}
     highlighted="{highlightedSwatchItems}"
-    on:highlight="{toggleHighlight}"
+    on:highlight="{(e) => toggleHighlight(e.detail.id)}"
   />
   <div class="code">
     {#each filteredRules as rule}
@@ -193,7 +193,7 @@
         <div
           class="code-line"
           class:highlight="{highlightedSwatchItems[property.swatchId]}"
-          on:dblclick={() => toggleHighlight({detail: { id: property.swatchId }})}
+          on:dblclick="{() => toggleHighlight(property.swatchId)}"
         >
         &nbsp;&nbsp;{property.key}: {property.value};<div class="color-indicator" style="background-color: {property.value}"></div>
       </div>

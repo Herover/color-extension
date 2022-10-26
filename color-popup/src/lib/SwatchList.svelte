@@ -1,8 +1,8 @@
-<script>
+<script lang="ts">
     import chroma from "chroma-js";
     import { createEventDispatcher } from "svelte";
 
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{ highlight: HighlightEvent }>();
 
   export let swatch = [];
   export let highlighted = {};
