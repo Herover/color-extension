@@ -5,12 +5,10 @@
   import SwatchList from './lib/SwatchList.svelte';
   import * as storage from './lib/storage';
   import RuleCode from './lib/RuleCode.svelte';
+  import type { Swatch } from './lib/swatch';
+  import type { Rule } from './lib/rule';
 
-  let swatch: Swatch[] = [
-    // { hsl: "hsl(32, 100%, 50%)", color: "#ff8800" },
-    // { hsl: "hsl(210, 65.4%, 20.4%)", color: "#123456" },
-    // { hsl: "hsl(0, 0%, 0%)", color: "#000000" },
-  ];
+  let swatch: Swatch[] = [];
 
   let rules: Rule[] = [];
 

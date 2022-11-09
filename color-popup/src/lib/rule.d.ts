@@ -4,7 +4,7 @@ interface RuleProperty {
   swatchId: string;
 };
 
-interface Rule {
+export interface Rule {
   selector: string; // CSS selector
   properties: RuleProperty[];
 };
