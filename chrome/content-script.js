@@ -36,25 +36,25 @@ chrome.runtime.onMessage.addListener(
       };
       isSelecting = true;
 
-      sendResponse({ res: "ok" });
+      sendResponse({ res: "ok", origin: window.location.origin });
     } else if (request.action === "updateRules") {
       const defs = getCSSRules((key, val) => isColor(val.toLowerCase().trim()));
       console.log("defs", defs);
-      sendResponse({ res: "ok", rules: defs });
+      sendResponse({ res: "ok", rules: defs, origin: window.location.origin });
       //chrome.runtime.sendMessage({ action: "rules", rules: defs });
     } else if (request.action === "updateVariables") {
       const defs = getCSSRules((key, val) => key.startsWith('--') && isColor(val.toLowerCase().trim()));
       console.log("defs", defs);
-      sendResponse({ res: "ok", rules: defs });
+      sendResponse({ res: "ok", rules: defs, origin: window.location.origin });
       //chrome.runtime.sendMessage({ action: "rules", rules: defs });
     } else if (request.action === "setCSSRule") {
       console.log("setCSSRule", request)
       setCSSRule(request.selector, request.key, request.value);
-      sendResponse({ res: "ok" });
+      sendResponse({ res: "ok", origin: window.location.origin });
     } else if (request.action === "getMessages") {
       // TODO: clean queue?
       chrome.storage.session.get([ "messageQueue" ], (data) => {
-        sendResponse({res: data.messageQueue, "test": "YAY"});
+        sendResponse({ res: data.messageQueue, origin: window.location.origin });
         chrome.storage.session.clear([ "messageQueue" ]);
       });
       return true;

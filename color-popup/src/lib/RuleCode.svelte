@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
+  import type { Rule } from "./rule";
 
 
   export let rules: Rule[] = [];

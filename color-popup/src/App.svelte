@@ -7,8 +7,12 @@
   import RuleCode from './lib/RuleCode.svelte';
   import type { Swatch } from './lib/swatch';
   import type { Rule } from './lib/rule';
+  import type { SiteData, SiteSwatch } from './lib/data';
 
-  let swatch: Swatch[] = [];
+  let siteKey = "";
+
+  let tabSiteData: SiteData | undefined;
+  let swatches: SiteSwatch | undefined;
 
   let rules: Rule[] = [];
 
@@ -24,7 +28,7 @@
     //testData = JSON.stringify(response);
   };
 
-  const createSwatchFromRules = (rules) => {
+  const createSwatchFromRules = (rules): Swatch[] => {
     const swatch = [];
     rules.forEach(rule => {
       rule.properties.forEach(property => {
@@ -39,7 +43,7 @@
           });
         }
 
-        property.swatchId = swatchIndex;
+        property.swatchId = "" + swatchIndex;
       })
     });
 
@@ -51,20 +55,32 @@
     const response = await chrome.tabs.sendMessage(tab.id, { action: "updateRules" });
 
     console.log("response", response);
-    swatch = createSwatchFromRules(response.rules);
+    const swatch = createSwatchFromRules(response.rules);
+    swatches = {
+      id: "0",
+      name: "Default",
+      swatch,
+    }
     rules = response.rules;
-    storage.setValue(storage.RULES, rules);
-    storage.setValue(storage.SWATCH, swatch);
+    //storage.setValue(storage.RULES, rules);
+    //storage.setValue(storage.SWATCH, swatch);
   };
   const updateVariables = async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const response = await chrome.tabs.sendMessage(tab.id, { action: "updateVariables" });
 
     console.log("response", response);
-    swatch = createSwatchFromRules(response.rules).sort((a, b) => chroma(b.hsl).hsl[0] - chroma(a.hsl).hsl[0]);
+    const swatch = createSwatchFromRules(response.rules).
+      // @ts-ignore
+      sort((a, b) => chroma(b.hsl).hsl[0] - chroma(a.hsl).hsl[0]);
+    swatches = {
+      id: "0",
+      name: "Default",
+      swatch,
+    }
     rules = response.rules;
-    storage.setValue(storage.RULES, rules);
-    storage.setValue(storage.SWATCH, swatch);
+    //storage.setValue(storage.RULES, rules);
+    //storage.setValue(storage.SWATCH, swatch);
   };
 
   const removeData = async () => {
@@ -74,21 +90,30 @@
   }
 
   onMount(async () => {
-    const data = await storage.getValues([ storage.RULES, storage.SWATCH, storage.ORDINAL ]);
-    rules = data[storage.RULES] || rules;
-    swatch = (data[storage.SWATCH] || swatch).sort((a, b) => chroma(b.hsl).hsl[0] - chroma(a.hsl).hsl[0]);;
-    ordinalScale = data[storage.ORDINAL] || ordinalScale;
-
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const response = await chrome.tabs.sendMessage(tab.id, {
       action: "getMessages",
     });
+    siteKey = response.origin;
+
+    //const tabData = await storage.getTabData(tab.id);
+    const siteData = await storage.getSiteData(siteKey);
+    tabSiteData = siteData;
+
+    if (siteData) {
+      rules = siteData.rules || rules;
+      swatches = (siteData.swatches[0] || swatches)
+      swatches.swatch.sort((a, b) => chroma(b.hsl).hsl[0] - chroma(a.hsl).hsl[0]);;
+      ordinalScale = siteData.ordinal || ordinalScale;
+    }
+
     if (response.res && response.res.length != 0) {
-      response.res.forEach(message => {
-        switch (message.action) {
+      response.res.forEach(messageData => {
+        switch (messageData.action) {
           case "registerOrdinal":
+            const message = messageData as MessageRegisterOrdinal;
             ordinalScale = message.colors;
-            swatch = message.colors.map((color, i) => ({
+            swatches.swatch = message.colors.map((color, i) => ({
               color: color.color,
               id: color.key,
               hsl: chroma(color.color).css("hsl"),
@@ -96,7 +121,7 @@
             break;
         
           default:
-            console.log("Unknown message type", message);
+            console.log("Unknown message type", messageData);
             break;
         }
       });
@@ -104,9 +129,10 @@
 
     // FIXME: data seems to gete deleted unless saved at least once?
     return Promise.all([
-      storage.setValue(storage.RULES, rules),
-      storage.setValue(storage.SWATCH, swatch),
-      storage.setValue(storage.ORDINAL, ordinalScale),
+      storage.setSiteData(siteKey, tabSiteData),
+      //storage.setValue(storage.RULES, rules),
+      //storage.setValue(storage.SWATCH, swatch),
+      //storage.setValue(storage.ORDINAL, ordinalScale),
     ]);
   });
 
@@ -114,13 +140,13 @@
 
   const updateSwatchItem = async (event: CustomEvent<UpdateColorEvent>) => {
     const { id, hslColor } = event.detail;
-    const swatchIndex = swatch.findIndex(e => e.id == id);
+    const swatchIndex = swatches.swatch.findIndex(e => e.id == id);
     if (swatchIndex == -1) {
       console.warn("Updating non-existing swatch item", id, event);
       return;
     }
-    swatch[swatchIndex].color = hslColor;
-    swatch[swatchIndex].hsl = hslColor;
+    swatches.swatch[swatchIndex].color = hslColor;
+    swatches.swatch[swatchIndex].hsl = hslColor;
 
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -148,16 +174,22 @@
     // TODO: Only do this if used on a javascript integrated webpage, use registration name
     const response = await chrome.tabs.sendMessage(tab.id, {
       action: "setColors",
-      colors: swatch.map(s => ({
+      colors: swatches.swatch.map(s => ({
         key: s.id,
         color: s.color,
       })),
     });
 
+    tabSiteData = {
+      ordinal: ordinalScale,
+      rules: rules,
+      swatches: [swatches],
+    }
 
-    storage.setValue(storage.RULES, rules);
-    storage.setValue(storage.SWATCH, swatch);
-    storage.setValue(storage.ORDINAL, ordinalScale);
+    await storage.setSiteData(siteKey, tabSiteData);
+    //storage.setValue(storage.RULES, rules);
+    //storage.setValue(storage.SWATCH, swatch);
+    //storage.setValue(storage.ORDINAL, ordinalScale);
   };
 
   const toggleHighlight = (id: string) => {
@@ -174,22 +206,24 @@
   <button on:click="{updateRules}">Get rules</button>
   <button on:click="{updateVariables}">Get variables only</button>
   <button on:click="{removeData}">Clear store</button>
-  <ColorWheel
-    colors="{swatch}"
-    highlighted="{highlightedSwatchItems}"
-    on:updateColor="{updateSwatchItem}"
-    on:highlight="{(e) => toggleHighlight(e.detail.id)}"
-  />
-  <SwatchList
-    swatch={swatch}
-    highlighted="{highlightedSwatchItems}"
-    on:highlight="{(e) => toggleHighlight(e.detail.id)}"
-  />
-  <RuleCode
-    rules="{filteredRules}"
-    highlighted="{highlightedSwatchItems}"
-    on:highlight="{(e) => toggleHighlight(e.detail.id)}"
-  />
+  {#if (typeof swatches != "undefined")}
+    <ColorWheel
+      colors="{swatches.swatch}"
+      highlighted="{highlightedSwatchItems}"
+      on:updateColor="{updateSwatchItem}"
+      on:highlight="{(e) => toggleHighlight(e.detail.id)}"
+    />
+    <SwatchList
+      swatch={swatches.swatch}
+      highlighted="{highlightedSwatchItems}"
+      on:highlight="{(e) => toggleHighlight(e.detail.id)}"
+    />
+    <RuleCode
+      rules="{filteredRules}"
+      highlighted="{highlightedSwatchItems}"
+      on:highlight="{(e) => toggleHighlight(e.detail.id)}"
+    />
+  {/if}
 </main>
 
 <style>
