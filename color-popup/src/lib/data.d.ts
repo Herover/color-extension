@@ -1,5 +1,5 @@
 import type { Rule } from "./rule";
-import type { Swatch } from "./swatch";
+import type { SwatchColor } from "./swatch";
 
 export interface SiteData {
   swatches: SiteSwatch[];
@@ -10,7 +10,7 @@ export interface SiteData {
 interface SiteSwatch {
   id: string;
   name: string;
-  swatch: Swatch[];
+  swatch: SwatchColor[];
 }
 
 export interface TabData {
