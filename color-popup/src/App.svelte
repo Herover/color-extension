@@ -8,6 +8,7 @@
   import type { SwatchColor } from './lib/swatch';
   import type { Rule } from './lib/rule';
   import type { SiteData } from './lib/data';
+    import ColorSlider from './lib/ColorSlider.svelte';
 
   let siteKey = "";
   let swatchID = "";
@@ -278,6 +279,12 @@
   <br>
   {#if (typeof activeSwatch != "undefined")}
     <ColorWheel
+      colors="{activeSwatch.swatch}"
+      highlighted="{highlightedSwatchItems}"
+      on:updateColor="{updateSwatchItem}"
+      on:highlight="{(e) => toggleHighlight(e.detail.id)}"
+    />
+    <ColorSlider
       colors="{activeSwatch.swatch}"
       highlighted="{highlightedSwatchItems}"
       on:updateColor="{updateSwatchItem}"
