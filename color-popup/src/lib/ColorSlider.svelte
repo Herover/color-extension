@@ -19,7 +19,7 @@
   const startSwatchItemMove = (event: CustomEvent<ColorCircleMoveEvent>) => {
     movingItem = computedColors.findIndex(e => e.id == event.detail.id);
   };
-  const endSwatchItemMove = (event: CustomEvent<ColorCircleStopMoveEvent>) => {
+  const endSwatchItemMove = () => {
     movingItem = -1;
   }
   const updatePosition = (event) => {
@@ -92,6 +92,7 @@
   width="{width}px"
   height="{height}px"
   on:mousemove="{updatePosition}"
+  on:mouseup="{() => endSwatchItemMove()}"
 >
   {#each computedColors as color}
     <ColorWheelCircle
