@@ -306,6 +306,7 @@
       on:updateColor="{updateSwatchItem}"
       on:highlight="{(e) => toggleHighlight(e.detail.id)}"
     />
+    <p>Lightness</p>
     <ColorSlider
       colors="{activeSwatch.swatch}"
       highlighted="{highlightedSwatchItems}"
