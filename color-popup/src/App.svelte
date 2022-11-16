@@ -48,7 +48,7 @@
         const [hue, saturation, lightness] = chromaColor.hsl();
         const alpha = chromaColor.alpha();
         // TODO: compare colors in different formats correctly?
-        let swatchIndex = swatch.findIndex(e => e.color == color);
+        let swatchIndex = swatch.findIndex(e => e.color == property.value);
         if (swatchIndex == -1) {
           swatchIndex = swatch.length;
           swatch.push({
