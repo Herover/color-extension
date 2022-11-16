@@ -2,11 +2,12 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	import chroma from "chroma-js";
 	import ColorWheelCircle from './ColorWheelCircle.svelte';
+  import type { SwatchColor } from './swatch';
 
 	export let height = 30;
 	export let width = 400;
 
-  export let colors = [];
+  export let colors: SwatchColor[] = [];
 
   export let highlighted = {};
 
@@ -31,14 +32,21 @@
         const color = chroma(computedColors[movingItem].color);
         const [hue, saturation] = color.hsl();
         const lightness = computedColors[movingItem].x/width;
-        const hslString = `${Math.floor(hue*100)/100}, ${Math.floor(saturation*10000)/100}%, ${lightness*100}%`;
+        const hslString = `${Math.floor(computedColors[movingItem].hue*100)/100}, ${Math.floor(computedColors[movingItem].saturation*10000)/100}%, ${lightness*100}%`;
         if (color.alpha() !== 1) {
           computedColors[movingItem].color = `hsla(${hslString},${color.alpha()})`;
         } else {
           computedColors[movingItem].color = `hsl(${hslString})`;
         }
 
-        dispatch("updateColor", { id: computedColors[movingItem].id, hslColor: computedColors[movingItem].color });
+        dispatch("updateColor", {
+          id: computedColors[movingItem].id,
+          hslColor: computedColors[movingItem].color,
+          hue: computedColors[movingItem].hue,
+          saturation: computedColors[movingItem].saturation,
+          lightness,
+          alpha: computedColors[movingItem].alpha,
+        });
       } catch(e) {
         // FIXME: quick way to avoid getting "stuck" dragging a circle when color becomes invalid
         movingItem = -1;
@@ -59,12 +67,16 @@
         return;
       }
 
-			const [hue, saturation, lightness] = chromaColor.hsl();
+			// const [hue, saturation, lightness] = chromaColor.hsl();
 			return {
-				x: lightness * width,
+				x: e.lightness * width,
+				highlight: highlighted[e.id],
 				color: e.color,
 				id: e.id,
-				highlight: highlighted[e.id],
+        hue: e.hue,
+        saturation: e.saturation,
+        lightness: e.lightness,
+        alpha: e.alpha,
 			};
 		})
 		.sort((a, b) => {

@@ -40,17 +40,24 @@
   };
 
   const createSwatchFromRules = (rules): SwatchColor[] => {
-    const swatch = [];
+    const swatch: SwatchColor[] = [];
     rules.forEach(rule => {
       rule.properties.forEach(property => {
-        const color = chroma(property.value).css("hsl");
+        const chromaColor = chroma(property.value);
+        const color = chromaColor.css("hsl");
+        const [hue, saturation, lightness] = chromaColor.hsl();
+        const alpha = chromaColor.alpha();
         let swatchIndex = swatch.findIndex(e => e.hsl == color);
         if (swatchIndex == -1) {
           swatchIndex = swatch.length;
           swatch.push({
             hsl: color,
             color: property.value,
-            id: swatchIndex,
+            id: swatchIndex + "",
+            hue: hue || 0,
+            saturation,
+            lightness,
+            alpha,
           });
         }
 
@@ -135,11 +142,20 @@
             tabSiteData.swatches.push({
               id: swatchID,
               name: messageData.name,
-              swatch: message.colors.map((color, i) => ({
-                color: color.color,
-                id: color.key,
-                hsl: chroma(color.color).css("hsl"),
-              })),
+              swatch: message.colors.map((color, i) => {
+                const chromaColor = chroma(color.color);
+                const [hue, saturation, lightness] = chromaColor.hsl();
+
+                return {
+                  color: color.color,
+                  id: color.key,
+                  hsl: chromaColor.css("hsl"),
+                  hue: hue || 0,
+                  saturation,
+                  lightness,
+                  alpha: chromaColor.alpha(),
+                };
+              }),
             });
             break;
         
@@ -158,7 +174,7 @@
   $: filteredRules = activeRules.filter(r => r.properties.length != 0);
 
   const updateSwatchItem = async (event: CustomEvent<UpdateColorEvent>) => {
-    const { id, hslColor } = event.detail;
+    const { id, hslColor, hue, saturation, lightness, alpha } = event.detail;
     const swatchIndex = activeSwatch.swatch.findIndex(e => e.id == id);
     if (swatchIndex == -1) {
       console.warn("Updating non-existing swatch item", id, event);
@@ -166,6 +182,10 @@
     }
     activeSwatch.swatch[swatchIndex].color = hslColor;
     activeSwatch.swatch[swatchIndex].hsl = hslColor;
+    activeSwatch.swatch[swatchIndex].hue = hue;
+    activeSwatch.swatch[swatchIndex].saturation = saturation;
+    activeSwatch.swatch[swatchIndex].lightness = lightness;
+    activeSwatch.swatch[swatchIndex].alpha = alpha;
 
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -252,6 +272,10 @@
         id: e.id,
         color: e.color,
         hsl: e.hsl,
+        hue: e.hue,
+        saturation: e.saturation,
+        lightness: e.lightness,
+        alpha: e.alpha,
       })),
     });
     tabSiteData = tabSiteData;

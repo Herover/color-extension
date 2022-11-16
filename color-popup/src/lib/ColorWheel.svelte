@@ -2,6 +2,7 @@
 	import { createEventDispatcher, onMount } from 'svelte';
 	import chroma from "chroma-js";
 	import ColorWheelCircle from './ColorWheelCircle.svelte';
+	import type { SwatchColor } from './swatch';
 
 	export let height = 400;
 	export let width = 400;
@@ -11,7 +12,7 @@
   export let angleSteps = 360;
   export let radiusSteps = 60;
 
-	export let colors = [];
+	export let colors: SwatchColor[] = [];
 
 	export let highlighted = {};
 
@@ -31,14 +32,21 @@
 			computedColors[movingItem].y = event.clientY - rect.top;
 			const color = chroma(computedColors[movingItem].color);
 			const [hue, saturation] = xyToHueSaturation(computedColors[movingItem].x, computedColors[movingItem].y);
-			const hslString = `${Math.floor(hue*100)/100}, ${Math.floor(saturation*10000)/100}%, ${Math.floor(color.hsl()[2]*10000)/100}%`;
-			if (color.alpha() !== 1) {
-				computedColors[movingItem].color = `hsla(${hslString},${color.alpha()})`;
+			const hslString = `${Math.floor((hue||0)*100)/100}, ${Math.floor(saturation*10000)/100}%, ${computedColors[movingItem].lightness*100}%`;
+			if (computedColors[movingItem].alpha !== 1) {
+				computedColors[movingItem].color = `hsla(${hslString},${computedColors[movingItem].alpha})`;
 			} else {
 				computedColors[movingItem].color = `hsl(${hslString})`;
 			}
 
-			dispatch("updateColor", { id: computedColors[movingItem].id, hslColor: computedColors[movingItem].color });
+			dispatch("updateColor", {
+				id: computedColors[movingItem].id,
+				hslColor: computedColors[movingItem].color,
+				hue,
+				saturation,
+				lightness: computedColors[movingItem].lightness,
+				alpha: computedColors[movingItem].alpha,
+			});
 		}
 
 		return false;
@@ -86,16 +94,16 @@
 
 	$: computedColors = colors
 		.map(e => {
-			const chromaColor = chroma(e.color);
-			// Note: black, gray, white will have hue NaN
-			const [hue, saturation] = chromaColor.hsl();
-			
 			return {
-				x: hueSaturationToX((hue || 0) * (Math.PI/180) + angleOffset, radius * saturation),
-				y: hueSaturationToY((hue || 0) * (Math.PI/180) + angleOffset, radius * saturation),
+				x: hueSaturationToX((e.hue || 0) * (Math.PI/180) + angleOffset, radius * e.saturation),
+				y: hueSaturationToY((e.hue || 0) * (Math.PI/180) + angleOffset, radius * e.saturation),
+				highlight: highlighted[e.id],
 				color: e.color,
 				id: e.id,
-				highlight: highlighted[e.id],
+        hue: e.hue,
+        saturation: e.saturation,
+        lightness: e.lightness,
+        alpha: e.alpha,
 			};
 		})
 		.sort((a, b) => {
