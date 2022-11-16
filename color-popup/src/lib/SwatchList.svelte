@@ -72,7 +72,7 @@
       class="swatch-color"
       style="background-color:{swatchItem.color}"
     ></span>
-    {swatchItem.hsl}
+    {swatchItem.color}
     {#if swatchItem.lookalikes.length}
       {#each swatchItem.lookalikes as lookalike}
         <span class="swatch-color" style="background-color:{lookalike.color}"></span>

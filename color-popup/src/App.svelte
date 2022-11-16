@@ -47,11 +47,11 @@
         const color = chromaColor.css("hsl");
         const [hue, saturation, lightness] = chromaColor.hsl();
         const alpha = chromaColor.alpha();
-        let swatchIndex = swatch.findIndex(e => e.hsl == color);
+        // TODO: compare colors in different formats correctly?
+        let swatchIndex = swatch.findIndex(e => e.color == color);
         if (swatchIndex == -1) {
           swatchIndex = swatch.length;
           swatch.push({
-            hsl: color,
             color: property.value,
             id: swatchIndex + "",
             hue: hue || 0,
@@ -181,7 +181,6 @@
       return;
     }
     activeSwatch.swatch[swatchIndex].color = hslColor;
-    activeSwatch.swatch[swatchIndex].hsl = hslColor;
     activeSwatch.swatch[swatchIndex].hue = hue;
     activeSwatch.swatch[swatchIndex].saturation = saturation;
     activeSwatch.swatch[swatchIndex].lightness = lightness;
@@ -271,7 +270,6 @@
       swatch: activeSwatch.swatch.map(e => ({
         id: e.id,
         color: e.color,
-        hsl: e.hsl,
         hue: e.hue,
         saturation: e.saturation,
         lightness: e.lightness,
