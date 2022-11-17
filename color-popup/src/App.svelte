@@ -167,7 +167,9 @@
       });
     }
 
-    await sendCurrentSwatch();
+    // sendCurrentSwatch needs activeSwatch to be calculated, which doesn't happen before we exit
+    // this function, use a timeout to wait for it to happen before sending swatch
+    setTimeout(sendCurrentSwatch, 1);
     // FIXME: data seems to gete deleted unless saved at least once?
     await storage.setSiteData(siteKey, tabSiteData);
   });
