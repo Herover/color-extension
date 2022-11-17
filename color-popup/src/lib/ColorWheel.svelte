@@ -3,6 +3,7 @@
 	import chroma from "chroma-js";
 	import ColorWheelCircle from './ColorWheelCircle.svelte';
 	import type { SwatchColor } from './swatch';
+    import { getHSLAString } from './util';
 
 	export let height = 400;
 	export let width = 400;
@@ -30,14 +31,8 @@
 			// computedColors has to be modified directly to svelte to pich changes up
 			computedColors[movingItem].x = event.clientX - rect.left;
 			computedColors[movingItem].y = event.clientY - rect.top;
-			const color = chroma(computedColors[movingItem].color);
 			const [hue, saturation] = xyToHueSaturation(computedColors[movingItem].x, computedColors[movingItem].y);
-			const hslString = `${Math.floor((hue||0)*100)/100}, ${Math.floor(saturation*10000)/100}%, ${computedColors[movingItem].lightness*100}%`;
-			if (computedColors[movingItem].alpha !== 1) {
-				computedColors[movingItem].color = `hsla(${hslString},${computedColors[movingItem].alpha})`;
-			} else {
-				computedColors[movingItem].color = `hsl(${hslString})`;
-			}
+			computedColors[movingItem].color = getHSLAString(hue, saturation, computedColors[movingItem].lightness, computedColors[movingItem].alpha);
 
 			dispatch("updateColor", {
 				id: computedColors[movingItem].id,

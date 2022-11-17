@@ -8,7 +8,8 @@
   import type { SwatchColor } from './lib/swatch';
   import type { Rule } from './lib/rule';
   import type { SiteData } from './lib/data';
-    import ColorSlider from './lib/ColorSlider.svelte';
+  import ColorSlider from './lib/ColorSlider.svelte';
+  import { getHSLAString } from './lib/util';
 
   let siteKey = "";
   let swatchID = "";
@@ -180,11 +181,37 @@
       console.warn("Updating non-existing swatch item", id, event);
       return;
     }
+
+    const dHue = activeSwatch.swatch[swatchIndex].hue - hue;
+    const dSaturation = activeSwatch.swatch[swatchIndex].saturation - saturation;
+    const dLightness = activeSwatch.swatch[swatchIndex].lightness - lightness;
+    const dAlpha = activeSwatch.swatch[swatchIndex].alpha - alpha;
+    
+    Object.keys(highlightedSwatchItems).forEach(sId => {
+      if (!highlightedSwatchItems[sId] || sId == id) {
+        return;
+      }
+      const selectedSwatchIndex = activeSwatch.swatch.findIndex(e => e.id == sId);
+
+      // Calculate new values, but clamp them within allowed ranges
+      const newHue = (activeSwatch.swatch[selectedSwatchIndex].hue - dHue + 360) % 360;
+      const newSaturation = Math.min(1, Math.max(0, activeSwatch.swatch[selectedSwatchIndex].saturation - dSaturation));
+      const newLightness = Math.min(1, Math.max(0, activeSwatch.swatch[selectedSwatchIndex].lightness - dLightness));
+      const newAlpha = Math.min(1, Math.max(0, activeSwatch.swatch[selectedSwatchIndex].alpha - dAlpha));
+
+      activeSwatch.swatch[selectedSwatchIndex].color = getHSLAString(newHue, newSaturation, newLightness, newAlpha);
+      activeSwatch.swatch[selectedSwatchIndex].hue = newHue;
+      activeSwatch.swatch[selectedSwatchIndex].saturation = newSaturation;
+      activeSwatch.swatch[selectedSwatchIndex].lightness = newLightness;
+      activeSwatch.swatch[selectedSwatchIndex].alpha = newAlpha;
+    });
+
     activeSwatch.swatch[swatchIndex].color = hslColor;
     activeSwatch.swatch[swatchIndex].hue = hue;
     activeSwatch.swatch[swatchIndex].saturation = saturation;
     activeSwatch.swatch[swatchIndex].lightness = lightness;
     activeSwatch.swatch[swatchIndex].alpha = alpha;
+    
 
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
