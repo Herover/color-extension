@@ -14,6 +14,16 @@ interface SiteSwatch {
   dependsOn?: string;
 }
 
+/**
+ * Contains data defining how edited tabs should behave
+ */
 export interface TabData {
-  activeSwatchId: string;
+  tabToSwatchId: { [string]: string };
+}
+
+/**
+ * Contains non-persistent data specific to the extension in a tab
+ */
+export interface TabConfig {
+  activeSwatchId?: string;
 }

@@ -22,14 +22,14 @@
 
   $: activeSwatch = tabSiteData.swatches.find(s => s.id == swatchID);
 
-  $: activeRules = tabSiteData.rules.map(r => ({
+  $: activeRules = swatchID ? tabSiteData.rules.map(r => ({
     selector: r.selector,
     properties: r.properties.map(p => ({
       key: p.key,
       swatchId: p.swatchId,
       value: activeSwatch.swatch.find(s => s.id == p.swatchId).color,
     }))
-  })) as Rule[];
+  })) : [] as Rule[];
 
   let highlightedSwatchItems = {};
 
@@ -83,6 +83,8 @@
     });
     swatchID = id;
     tabSiteData.rules = response.rules;
+
+    await updateTabConfig();
   };
   const updateVariables = async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -100,6 +102,8 @@
     }
     swatchID = id;
     tabSiteData.rules = response.rules;
+
+    await updateTabConfig();
   };
 
   const removeData = async () => {
@@ -115,7 +119,6 @@
     });
     siteKey = response.origin;
 
-    //const tabData = await storage.getTabData(tab.id);
     const siteData = await storage.getSiteData(siteKey);
     tabSiteData = siteData || {
       swatches: [],
@@ -123,9 +126,9 @@
       ordinal: [],
     };
 
-    if (siteData) {
-      swatchID = "0"; // TODO: use tab data
-    }
+    const tabData = await storage.getTabData();
+
+    swatchID = tabData.tabToSwatchId["" + tab.id] || "";
 
     if (response.res && response.res.length != 0) {
       response.res.forEach(messageData => {
@@ -172,6 +175,7 @@
     setTimeout(sendCurrentSwatch, 1);
     // FIXME: data seems to gete deleted unless saved at least once?
     await storage.setSiteData(siteKey, tabSiteData);
+    await updateTabConfig();
   });
 
   $: filteredRules = activeRules.filter(r => r.properties.length != 0);
@@ -236,6 +240,13 @@
     tabSiteData = tabSiteData;
 
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    
+    const currentTabURL = await chrome.tabs.sendMessage(tab.id, {
+      action: "getURL",
+    });
+
+    const tabs = await chrome.tabs.query({ url: currentTabURL.res });
+    const tabData = await storage.getTabData();
 
     let ruleIndex = -1;
     let propertyIndex = -1;
@@ -250,11 +261,18 @@
     if (ruleIndex != -1 && propertyIndex != -1) {
       activeRules[ruleIndex].properties[propertyIndex].value = hslColor;
 
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        action: "setCSSRule",
-        selector: activeRules[ruleIndex].selector,
-        key: activeRules[ruleIndex].properties[propertyIndex].key,
-        value: activeRules[ruleIndex].properties[propertyIndex].value,
+      tabs.forEach(async tab => {
+        if (!tabData.tabToSwatchId["" + tab.id]) {
+          return;
+        }
+        const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id]);
+        const response = await chrome.tabs.sendMessage(tab.id, {
+          action: "setCSSRule",
+          selector: activeRules[ruleIndex].selector,
+          key: activeRules[ruleIndex].properties[propertyIndex].key,
+          value: swatch.swatch.find(e => e.id == activeRules[ruleIndex].properties[propertyIndex].swatchId).color,
+          swatchId: swatch.id,
+        });
       });
     }
 
@@ -275,6 +293,9 @@
       return;
     }
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+    await updateTabConfig(tab.id);
+
     activeRules.map(async rule => {
       rule.properties.map(async property => {
         await chrome.tabs.sendMessage(tab.id, {
@@ -296,6 +317,20 @@
     });
   }
 
+  /**
+   * Saves data related to tabs, call every time some meta-data that this tab might want to recover
+   * later changes.
+  */
+  const updateTabConfig = async (tabId?: number) => {
+    if (!tabId) {
+      let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      tabId = tab.id;
+    }
+    const tabData = await storage.getTabData();
+    tabData.tabToSwatchId["" + tabId] = swatchID;
+    return await storage.setTabData(tabData);
+  };
+
   const toggleHighlight = (id: string) => {
     if (highlightedSwatchItems[id]) {
       highlightedSwatchItems[id] = false;
@@ -306,6 +341,8 @@
 
   const selectSwatch = async (id: string) => {
     swatchID = id;
+
+    await updateTabConfig();
 
     // Use a timeout in order so that Svelte update dependents on swatchID
     setTimeout(() => sendCurrentSwatch(), 1);

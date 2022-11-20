@@ -70,6 +70,8 @@ chrome.runtime.onMessage.addListener(
         },
         window.origin,
       );
+    } else if (request.action === "getURL") {
+      sendResponse({ res: window.location.href, origin: window.location.origin });
     }
   }
 );
