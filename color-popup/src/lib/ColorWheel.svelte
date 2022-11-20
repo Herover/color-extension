@@ -3,7 +3,7 @@
 	import chroma from "chroma-js";
 	import ColorWheelCircle from './ColorWheelCircle.svelte';
 	import type { SwatchColor } from './swatch';
-    import { getHSLAString } from './util';
+    import { clamp, getHSLAString } from './util';
 
 	export let height = 400;
 	export let width = 400;
@@ -90,8 +90,8 @@
 	$: computedColors = colors
 		.map(e => {
 			return {
-				x: hueSaturationToX((e.hue || 0) * (Math.PI/180) + angleOffset, radius * e.saturation),
-				y: hueSaturationToY((e.hue || 0) * (Math.PI/180) + angleOffset, radius * e.saturation),
+				x: hueSaturationToX((e.hue || 0) * (Math.PI/180) + angleOffset, radius * clamp(0, 1, e.saturation)),
+				y: hueSaturationToY((e.hue || 0) * (Math.PI/180) + angleOffset, radius * clamp(0, 1, e.saturation)),
 				highlight: highlighted[e.id],
 				color: e.color,
 				id: e.id,

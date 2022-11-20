@@ -11,6 +11,7 @@ interface SiteSwatch {
   id: string;
   name: string;
   swatch: SwatchColor[];
+  dependsOn?: string;
 }
 
 export interface TabData {

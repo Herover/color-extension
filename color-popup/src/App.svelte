@@ -7,7 +7,7 @@
   import RuleCode from './lib/RuleCode.svelte';
   import type { SwatchColor } from './lib/swatch';
   import type { Rule } from './lib/rule';
-  import type { SiteData } from './lib/data';
+  import type { SiteData, SiteSwatch } from './lib/data';
   import ColorSlider from './lib/ColorSlider.svelte';
   import { getHSLAString } from './lib/util';
 
@@ -78,7 +78,7 @@
     const id = tabSiteData.swatches.length + "";
     tabSiteData.swatches.push({
       id,
-      name: "Default",
+      name: "Root",
       swatch,
     });
     swatchID = id;
@@ -178,6 +178,7 @@
 
   const updateSwatchItem = async (event: CustomEvent<UpdateColorEvent>) => {
     const { id, hslColor, hue, saturation, lightness, alpha } = event.detail;
+
     const swatchIndex = activeSwatch.swatch.findIndex(e => e.id == id);
     if (swatchIndex == -1) {
       console.warn("Updating non-existing swatch item", id, event);
@@ -188,32 +189,51 @@
     const dSaturation = activeSwatch.swatch[swatchIndex].saturation - saturation;
     const dLightness = activeSwatch.swatch[swatchIndex].lightness - lightness;
     const dAlpha = activeSwatch.swatch[swatchIndex].alpha - alpha;
-    
-    Object.keys(highlightedSwatchItems).forEach(sId => {
-      if (!highlightedSwatchItems[sId] || sId == id) {
-        return;
+
+    const updateSwatch = (swatch: SiteSwatch, ids: string[]) => {
+      
+      ids.forEach(sId => {
+        const selectedSwatchIndex = swatch.swatch.findIndex(e => e.id == sId);
+
+        // Calculate new values, but clamp them within allowed ranges
+        const newHue = (swatch.swatch[selectedSwatchIndex].hue - dHue + 360) % 360;
+        const newSaturation = swatch.swatch[selectedSwatchIndex].saturation - dSaturation;
+        const newLightness = swatch.swatch[selectedSwatchIndex].lightness - dLightness;
+        const newAlpha = swatch.swatch[selectedSwatchIndex].alpha - dAlpha;
+
+        swatch.swatch[selectedSwatchIndex].color = getHSLAString(newHue, newSaturation, newLightness, newAlpha);
+        swatch.swatch[selectedSwatchIndex].hue = newHue;
+        swatch.swatch[selectedSwatchIndex].saturation = newSaturation;
+        swatch.swatch[selectedSwatchIndex].lightness = newLightness;
+        swatch.swatch[selectedSwatchIndex].alpha = newAlpha;
+      });
+
+      /* activeSwatch.swatch[swatchIndex].color = hslColor;
+      activeSwatch.swatch[swatchIndex].hue = hue;
+      activeSwatch.swatch[swatchIndex].saturation = saturation;
+      activeSwatch.swatch[swatchIndex].lightness = lightness;
+      activeSwatch.swatch[swatchIndex].alpha = alpha; */
+    };
+
+    const swatchItemIDs = Object.keys(highlightedSwatchItems).reduce((acc, id) => {
+      if (highlightedSwatchItems[id]) {
+        acc.push(id);
       }
-      const selectedSwatchIndex = activeSwatch.swatch.findIndex(e => e.id == sId);
+      return acc;
+    }, []);
+    if (!swatchItemIDs.includes(id)) { swatchItemIDs.push(id); }
 
-      // Calculate new values, but clamp them within allowed ranges
-      const newHue = (activeSwatch.swatch[selectedSwatchIndex].hue - dHue + 360) % 360;
-      const newSaturation = Math.min(1, Math.max(0, activeSwatch.swatch[selectedSwatchIndex].saturation - dSaturation));
-      const newLightness = Math.min(1, Math.max(0, activeSwatch.swatch[selectedSwatchIndex].lightness - dLightness));
-      const newAlpha = Math.min(1, Math.max(0, activeSwatch.swatch[selectedSwatchIndex].alpha - dAlpha));
+    const recurseSwatches = (currentSwatch) => {
+      updateSwatch(currentSwatch, swatchItemIDs);
+      tabSiteData.swatches.forEach(swatch => {
+        if (swatch.dependsOn == currentSwatch.id) {
+          recurseSwatches(swatch);
+        }
+      });
+    };
+    recurseSwatches(activeSwatch);
 
-      activeSwatch.swatch[selectedSwatchIndex].color = getHSLAString(newHue, newSaturation, newLightness, newAlpha);
-      activeSwatch.swatch[selectedSwatchIndex].hue = newHue;
-      activeSwatch.swatch[selectedSwatchIndex].saturation = newSaturation;
-      activeSwatch.swatch[selectedSwatchIndex].lightness = newLightness;
-      activeSwatch.swatch[selectedSwatchIndex].alpha = newAlpha;
-    });
-
-    activeSwatch.swatch[swatchIndex].color = hslColor;
-    activeSwatch.swatch[swatchIndex].hue = hue;
-    activeSwatch.swatch[swatchIndex].saturation = saturation;
-    activeSwatch.swatch[swatchIndex].lightness = lightness;
-    activeSwatch.swatch[swatchIndex].alpha = alpha;
-    
+    tabSiteData = tabSiteData;
 
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
@@ -304,9 +324,14 @@
         lightness: e.lightness,
         alpha: e.alpha,
       })),
+      dependsOn: activeSwatch.id,
     });
     tabSiteData = tabSiteData;
     selectSwatch(newId);
+  };
+
+  const nameOfSwatch = (swatchID: string) => {
+    return tabSiteData.swatches.find(swatch => swatch.id == swatchID).name;
   };
 </script>
 
@@ -323,6 +348,9 @@
         <b>{swatch.name}</b>
       {:else}
         {swatch.name}
+      {/if}
+      {#if swatch.dependsOn}
+        <i>({nameOfSwatch(swatch.dependsOn)})</i>
       {/if}
     </button>
   {/each}

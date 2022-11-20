@@ -3,7 +3,7 @@
 	import chroma from "chroma-js";
 	import ColorWheelCircle from './ColorWheelCircle.svelte';
   import type { SwatchColor } from './swatch';
-    import { getHSLAString } from './util';
+    import { clamp, getHSLAString } from './util';
 
 	export let height = 30;
 	export let width = 400;
@@ -63,7 +63,7 @@
 
 			// const [hue, saturation, lightness] = chromaColor.hsl();
 			return {
-				x: e.lightness * width,
+				x: clamp(0, 1, e.lightness) * width,
 				highlight: highlighted[e.id],
 				color: e.color,
 				id: e.id,
