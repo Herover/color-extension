@@ -277,12 +277,18 @@
     }
 
     // TODO: Only do this if used on a javascript integrated webpage, use registration name
-    const response = await chrome.tabs.sendMessage(tab.id, {
-      action: "setColors",
-      colors: activeSwatch.swatch.map(s => ({
-        key: s.id,
-        color: s.color,
-      })),
+    tabs.forEach(async tab => {
+      if (!tabData.tabToSwatchId["" + tab.id]) {
+        return;
+      }
+      const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id]);
+      const response = await chrome.tabs.sendMessage(tab.id, {
+        action: "setColors",
+        colors: swatch.swatch.map(s => ({
+          key: s.id,
+          color: s.color,
+        })),
+      });
     });
 
     await storage.setSiteData(siteKey, tabSiteData);
