@@ -15,10 +15,12 @@
   {#each rules as rule}
     <div class="code-line">{rule.selector} &#123;</div>
     {#each rule.properties as property}
+      <!-- svelte-ignore a11y-click-events-have-key-events -->
       <div
         class="code-line"
         class:highlight="{highlighted[property.swatchId]}"
-        on:dblclick="{() => dispatch("highlight", { id: property.swatchId })}"
+        on:dblclick="{() => dispatch("highlight", { id: property.swatchId, deselect: true, deselectOthers: false })}"
+        on:click="{(e) => e.ctrlKey && dispatch("highlight", { id: property.swatchId, deselect: true, deselectOthers: false })}"
       >
       &nbsp;&nbsp;{property.key}: {property.value};<div class="color-indicator" style="background-color: {property.value}"></div>
     </div>

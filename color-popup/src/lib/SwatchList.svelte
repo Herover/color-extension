@@ -64,9 +64,11 @@
 </script>
 
 {#each sortedSwatch as swatchItem}
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
   <p
     class:highlight="{highlighted[swatchItem.id]}"
-    on:dblclick="{() => dispatch("highlight", { id: swatchItem.id })}"
+    on:dblclick="{() => dispatch("highlight", { id: swatchItem.id, deselect: true, deselectOthers: false })}"
+    on:click="{(e) => e.ctrlKey && dispatch("highlight", { id: swatchItem.id, deselect: true, deselectOthers: false })}"
   >
     <span
       class="swatch-color"

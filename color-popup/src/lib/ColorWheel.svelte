@@ -168,7 +168,11 @@
 </script>
 
 <div class="circle-holder">
-	<canvas width="{width}px" height="{height}px" bind:this={canvas}></canvas>
+	<canvas
+		width="{width}px"
+		height="{height}px"
+		bind:this={canvas}
+	></canvas>
 	<svg
 		width="{width}px"
 		height="{height}px"

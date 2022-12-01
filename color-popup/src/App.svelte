@@ -183,6 +183,7 @@
   $: filteredRules = activeRules.filter(r => r.properties.length != 0);
 
   const updateSwatchItem = async (event: CustomEvent<UpdateColorEvent>) => {
+    console.log(event.detail)
     const { id, hslColor, hue, saturation, lightness, alpha } = event.detail;
 
     const swatchIndex = activeSwatch.swatch.findIndex(e => e.id == id);
@@ -340,9 +341,22 @@
     return await storage.setTabData(tabData);
   };
 
-  const toggleHighlight = (id: string) => {
+  const toggleHighlight = (id: string | undefined, deselectAll: boolean, deselect: boolean) => {
+    if (deselectAll) {
+      Object
+        .keys(highlightedSwatchItems)
+        .forEach(key => key != id && (highlightedSwatchItems[key] = false));
+    }
+
+    console.log("id", id, typeof id)
+    if (typeof id != "string") {
+      return;
+    }
+
     if (highlightedSwatchItems[id]) {
-      highlightedSwatchItems[id] = false;
+      if (deselect) {
+        highlightedSwatchItems[id] = false;
+      }
     } else {
       highlightedSwatchItems[id] = true;
     }
@@ -407,24 +421,24 @@
       colors="{activeSwatch.swatch}"
       highlighted="{highlightedSwatchItems}"
       on:updateColor="{updateSwatchItem}"
-      on:highlight="{(e) => toggleHighlight(e.detail.id)}"
+      on:highlight="{(e) => toggleHighlight(e.detail.id, e.detail.deselectOthers, e.detail.deselect)}"
     />
     <p>Lightness</p>
     <ColorSlider
       colors="{activeSwatch.swatch}"
       highlighted="{highlightedSwatchItems}"
       on:updateColor="{updateSwatchItem}"
-      on:highlight="{(e) => toggleHighlight(e.detail.id)}"
+      on:highlight="{(e) => toggleHighlight(e.detail.id, e.detail.deselectOthers, e.detail.deselect)}"
     />
     <SwatchList
       swatch={activeSwatch.swatch}
       highlighted="{highlightedSwatchItems}"
-      on:highlight="{(e) => toggleHighlight(e.detail.id)}"
+      on:highlight="{(e) => toggleHighlight(e.detail.id, e.detail.deselectOthers, e.detail.deselect)}"
     />
     <RuleCode
       rules="{filteredRules}"
       highlighted="{highlightedSwatchItems}"
-      on:highlight="{(e) => toggleHighlight(e.detail.id)}"
+      on:highlight="{(e) => toggleHighlight(e.detail.id, e.detail.deselectOthers, e.detail.deselect)}"
     />
   {/if}
 </main>

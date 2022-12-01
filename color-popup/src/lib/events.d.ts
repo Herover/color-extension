@@ -8,7 +8,12 @@ interface UpdateColorEvent {
 };
 
 interface HighlightEvent {
-  id: string;
+  /** Id of item */
+  id?: string;
+  /** Allow deselecting this item  */
+  deselect: boolean;
+  /** Deselect all items */
+  deselectOthers: boolean;
 }
 
 interface ColorCircleMoveEvent {
