@@ -22,16 +22,18 @@
 
   $: activeSwatch = tabSiteData.swatches.find(s => s.id == swatchID);
 
-  $: activeRules = swatchID ? tabSiteData.rules.map(r => ({
+  $: activeRules = swatchID ? getRules(activeSwatch) : [] as Rule[];
+
+  let highlightedSwatchItems = {};
+
+  const getRules = (swatch: SiteSwatch): Rule[] => tabSiteData.rules.map(r => ({
     selector: r.selector,
     properties: r.properties.map(p => ({
       key: p.key,
       swatchId: p.swatchId,
-      value: activeSwatch.swatch.find(s => s.id == p.swatchId).color,
+      value: swatch.swatch.find(s => s.id == p.swatchId).color,
     }))
-  })) : [] as Rule[];
-
-  let highlightedSwatchItems = {};
+  }));
 
   const selectItem = async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -172,7 +174,7 @@
 
     // sendCurrentSwatch needs activeSwatch to be calculated, which doesn't happen before we exit
     // this function, use a timeout to wait for it to happen before sending swatch
-    setTimeout(sendCurrentSwatch, 1);
+    setTimeout(() => sendSwatch(activeSwatch), 1);
     // FIXME: data seems to gete deleted unless saved at least once?
     await storage.setSiteData(siteKey, tabSiteData);
     await updateTabConfig();
@@ -266,13 +268,7 @@
           return;
         }
         const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id]);
-        const response = await chrome.tabs.sendMessage(tab.id, {
-          action: "setCSSRule",
-          selector: activeRules[ruleIndex].selector,
-          key: activeRules[ruleIndex].properties[propertyIndex].key,
-          value: swatch.swatch.find(e => e.id == activeRules[ruleIndex].properties[propertyIndex].swatchId).color,
-          swatchId: swatch.id,
-        });
+        sendSwatch(swatch, tab.id);
       });
     }
 
@@ -294,17 +290,24 @@
     await storage.setSiteData(siteKey, tabSiteData);
   };
 
-  const sendCurrentSwatch = async () => {
-    if (!activeSwatch) {
+  const sendSwatch = async (swatch: SiteSwatch, tabId?: number) => {
+    if (!swatch) {
       return;
     }
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
-    await updateTabConfig(tab.id);
+    if (typeof tabId == "undefined") {
+      let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      tabId = tab.id;
+    }
 
-    activeRules.map(async rule => {
+    await updateTabConfig();
+
+    const rules = getRules(swatch);
+
+    // TODO: Consider only sending changed rules
+    rules.map(async rule => {
       rule.properties.map(async property => {
-        await chrome.tabs.sendMessage(tab.id, {
+        await chrome.tabs.sendMessage(tabId, {
           action: "setCSSRule",
           selector: rule.selector,
           key: property.key,
@@ -314,9 +317,9 @@
     });
 
     // TODO: Only do this if used on a javascript integrated webpage, use registration name
-    const response = await chrome.tabs.sendMessage(tab.id, {
+    const response = await chrome.tabs.sendMessage(tabId, {
       action: "setColors",
-      colors: activeSwatch.swatch.map(s => ({
+      colors: swatch.swatch.map(s => ({
         key: s.id,
         color: s.color,
       })),
@@ -327,11 +330,11 @@
    * Saves data related to tabs, call every time some meta-data that this tab might want to recover
    * later changes.
   */
-  const updateTabConfig = async (tabId?: number) => {
-    if (!tabId) {
-      let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      tabId = tab.id;
-    }
+  const updateTabConfig = async () => {
+
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const tabId = tab.id;
+
     const tabData = await storage.getTabData();
     tabData.tabToSwatchId["" + tabId] = swatchID;
     return await storage.setTabData(tabData);
@@ -351,7 +354,7 @@
     await updateTabConfig();
 
     // Use a timeout in order so that Svelte update dependents on swatchID
-    setTimeout(() => sendCurrentSwatch(), 1);
+    setTimeout(() => sendSwatch(activeSwatch), 1);
   };
 
   const newSwatch = () => {
