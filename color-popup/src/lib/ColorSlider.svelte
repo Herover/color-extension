@@ -30,15 +30,15 @@
 
         computedColors[movingItem].x = Math.max(0, Math.min(width, event.clientX - rect.left));
 
-        const lightness = computedColors[movingItem].x/width;
-        computedColors[movingItem].color = getHSLAString(computedColors[movingItem].hue, computedColors[movingItem].saturation, lightness, computedColors[movingItem].alpha);
+        const value = computedColors[movingItem].x/width;
+        computedColors[movingItem].color = getHSLAString(computedColors[movingItem].hue, computedColors[movingItem].saturation, value, computedColors[movingItem].alpha);
 
         dispatch("updateColor", {
           id: computedColors[movingItem].id,
           hslColor: computedColors[movingItem].color,
           hue: computedColors[movingItem].hue,
           saturation: computedColors[movingItem].saturation,
-          lightness,
+          value,
           alpha: computedColors[movingItem].alpha,
         });
       } catch(e) {
@@ -61,15 +61,15 @@
         return;
       }
 
-			// const [hue, saturation, lightness] = chromaColor.hsl();
+			// const [hue, saturation, value] = chromaColor.hsl();
 			return {
-				x: clamp(0, 1, e.lightness) * width,
+				x: clamp(0, 1, e.value) * width,
 				highlight: highlighted[e.id],
 				color: e.color,
 				id: e.id,
         hue: e.hue,
         saturation: e.saturation,
-        lightness: e.lightness,
+        value: e.value,
         alpha: e.alpha,
 			};
 		})

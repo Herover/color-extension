@@ -32,14 +32,14 @@
 			computedColors[movingItem].x = event.clientX - rect.left;
 			computedColors[movingItem].y = event.clientY - rect.top;
 			const [hue, saturation] = xyToHueSaturation(computedColors[movingItem].x, computedColors[movingItem].y);
-			computedColors[movingItem].color = getHSLAString(hue, saturation, computedColors[movingItem].lightness, computedColors[movingItem].alpha);
+			computedColors[movingItem].color = getHSLAString(hue, saturation, computedColors[movingItem].value, computedColors[movingItem].alpha);
 
 			dispatch("updateColor", {
 				id: computedColors[movingItem].id,
 				hslColor: computedColors[movingItem].color,
 				hue,
 				saturation,
-				lightness: computedColors[movingItem].lightness,
+				value: computedColors[movingItem].value,
 				alpha: computedColors[movingItem].alpha,
 			});
 		}
@@ -89,6 +89,7 @@
 
 	$: computedColors = colors
 		.map(e => {
+			//const [hue, saturation] = chroma.hsl(e.hue, e.saturation, e.value).hsv();
 			return {
 				x: hueSaturationToX((e.hue || 0) * (Math.PI/180) + angleOffset, radius * clamp(0, 1, e.saturation)),
 				y: hueSaturationToY((e.hue || 0) * (Math.PI/180) + angleOffset, radius * clamp(0, 1, e.saturation)),
@@ -97,7 +98,7 @@
 				id: e.id,
         hue: e.hue,
         saturation: e.saturation,
-        lightness: e.lightness,
+        value: e.value,
         alpha: e.alpha,
 			};
 		})
@@ -121,15 +122,15 @@
 					(radiusStep + 1) * (1 / (radiusSteps)),
 					1,
 				);
-				const hslColor = hsvColor.css("hsl");
+				const cssColor = hsvColor.css("hsl");
 
 				const angle1 = angleOffset + partAngle * angleStep;
 				const angle2 = angleOffset + partAngle * (angleStep + 1);
 				const mul1 = radius * (partRadius * (radiusStep));
 				const mul2 = radius * (partRadius * (radiusStep + 1));
 
-				ctx.fillStyle = hslColor;
-				ctx.strokeStyle = hslColor;
+				ctx.fillStyle = cssColor;
+				ctx.strokeStyle = cssColor;
 
 				ctx.beginPath();
 

@@ -3,6 +3,6 @@ export interface SwatchColor {
   color: string;
   hue: number;
   saturation: number;
-  lightness: number;
+  value: number;
   alpha: number;
 };

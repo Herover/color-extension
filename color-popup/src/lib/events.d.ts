@@ -3,7 +3,7 @@ interface UpdateColorEvent {
   hslColor: string;
   hue: number;
   saturation: number;
-  lightness: number;
+  value: number;
   alpha: number;
 };
 

@@ -42,20 +42,20 @@
     })
     .map(e => e) // Shallow-copy to avoid mutating original array
     .sort((a, b) => {
-      const aHSL = chroma(a.color).hsl();
-      const bHSL = chroma(b.color).hsl();
+      const aHSV = chroma(a.color).hsv();
+      const bHSV = chroma(b.color).hsv();
 
-      const hueDiff = (bHSL[0] || -1) - (aHSL[0] || -1);
+      const hueDiff = (bHSV[0] || -1) - (aHSV[0] || -1);
       if (hueDiff == 0) {
-        const saturationDiff = bHSL[1] - aHSL[1];
+        const saturationDiff = bHSV[1] - aHSV[1];
         if (saturationDiff == 0) {
-          const lightnessDiff = bHSL[2] - aHSL[2];
-          if (lightnessDiff == 0) {
-            // @ts-ignore because color.hsl() now returns 4 components
-            const alphaDiff = (bHSL[3] || 1) - (aHSL[3] || 1);
+          const valueDiff = bHSV[2] - aHSV[2];
+          if (valueDiff == 0) {
+            // @ts-ignore because color.hsv() now returns 4 components
+            const alphaDiff = (bHSV[3] || 1) - (aHSV[3] || 1);
             return alphaDiff;
           }
-          return lightnessDiff;
+          return valueDiff;
         }
         return saturationDiff;
       }

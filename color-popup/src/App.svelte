@@ -47,8 +47,7 @@
     rules.forEach(rule => {
       rule.properties.forEach(property => {
         const chromaColor = chroma(property.value);
-        const color = chromaColor.css("hsl");
-        const [hue, saturation, lightness] = chromaColor.hsl();
+        const [hue, saturation, value] = chromaColor.hsv();
         const alpha = chromaColor.alpha();
         // TODO: compare colors in different formats correctly?
         let swatchIndex = swatch.findIndex(e => e.color == property.value);
@@ -59,7 +58,7 @@
             id: swatchIndex + "",
             hue: hue || 0,
             saturation,
-            lightness,
+            value,
             alpha,
           });
         }
@@ -96,7 +95,7 @@
     const id = tabSiteData.swatches.length + "";
     const swatch = createSwatchFromRules(response.rules).
       // @ts-ignore
-      sort((a, b) => chroma(b.hsl).hsl[0] - chroma(a.hsl).hsl[0]);
+      sort((a, b) => chroma(b.hsv).hsv[0] - chroma(a.hsv).hsv[0]);
     tabSiteData.swatches[0] = {
       id,
       name: "Default",
@@ -150,7 +149,7 @@
               name: messageData.name,
               swatch: message.colors.map((color, i) => {
                 const chromaColor = chroma(color.color);
-                const [hue, saturation, lightness] = chromaColor.hsl();
+                const [hue, saturation, value] = chromaColor.hsv();
 
                 return {
                   color: color.color,
@@ -158,7 +157,7 @@
                   hsl: chromaColor.css("hsl"),
                   hue: hue || 0,
                   saturation,
-                  lightness,
+                  value,
                   alpha: chromaColor.alpha(),
                 };
               }),
@@ -184,7 +183,7 @@
 
   const updateSwatchItem = async (event: CustomEvent<UpdateColorEvent>) => {
     console.log(event.detail)
-    const { id, hslColor, hue, saturation, lightness, alpha } = event.detail;
+    const { id, hslColor, hue, saturation, value, alpha } = event.detail;
 
     const swatchIndex = activeSwatch.swatch.findIndex(e => e.id == id);
     if (swatchIndex == -1) {
@@ -194,7 +193,7 @@
 
     const dHue = activeSwatch.swatch[swatchIndex].hue - hue;
     const dSaturation = activeSwatch.swatch[swatchIndex].saturation - saturation;
-    const dLightness = activeSwatch.swatch[swatchIndex].lightness - lightness;
+    const dValue = activeSwatch.swatch[swatchIndex].value - value;
     const dAlpha = activeSwatch.swatch[swatchIndex].alpha - alpha;
 
     const updateSwatch = (swatch: SiteSwatch, ids: string[]) => {
@@ -205,20 +204,20 @@
         // Calculate new values, but clamp them within allowed ranges
         const newHue = (swatch.swatch[selectedSwatchIndex].hue - dHue + 360) % 360;
         const newSaturation = swatch.swatch[selectedSwatchIndex].saturation - dSaturation;
-        const newLightness = swatch.swatch[selectedSwatchIndex].lightness - dLightness;
+        const newValue = swatch.swatch[selectedSwatchIndex].value - dValue;
         const newAlpha = swatch.swatch[selectedSwatchIndex].alpha - dAlpha;
 
-        swatch.swatch[selectedSwatchIndex].color = getHSLAString(newHue, newSaturation, newLightness, newAlpha);
+        swatch.swatch[selectedSwatchIndex].color = getHSLAString(newHue, newSaturation, newValue, newAlpha);
         swatch.swatch[selectedSwatchIndex].hue = newHue;
         swatch.swatch[selectedSwatchIndex].saturation = newSaturation;
-        swatch.swatch[selectedSwatchIndex].lightness = newLightness;
+        swatch.swatch[selectedSwatchIndex].value = newValue;
         swatch.swatch[selectedSwatchIndex].alpha = newAlpha;
       });
 
       /* activeSwatch.swatch[swatchIndex].color = hslColor;
       activeSwatch.swatch[swatchIndex].hue = hue;
       activeSwatch.swatch[swatchIndex].saturation = saturation;
-      activeSwatch.swatch[swatchIndex].lightness = lightness;
+      activeSwatch.swatch[swatchIndex].value = value;
       activeSwatch.swatch[swatchIndex].alpha = alpha; */
     };
 
@@ -381,7 +380,7 @@
         color: e.color,
         hue: e.hue,
         saturation: e.saturation,
-        lightness: e.lightness,
+        value: e.value,
         alpha: e.alpha,
       })),
       dependsOn: activeSwatch.id,
@@ -423,7 +422,7 @@
       on:updateColor="{updateSwatchItem}"
       on:highlight="{(e) => toggleHighlight(e.detail.id, e.detail.deselectOthers, e.detail.deselect)}"
     />
-    <p>Lightness</p>
+    <p>Value</p>
     <ColorSlider
       colors="{activeSwatch.swatch}"
       highlighted="{highlightedSwatchItems}"
