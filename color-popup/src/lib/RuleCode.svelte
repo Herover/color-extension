@@ -6,13 +6,18 @@
   export let rules: Rule[] = [];
   export let highlighted = {};
 
+  let searchFor = "";
+
+  $: rulesFiltered = rules.filter(e => e.selector.includes(searchFor));
+
   const dispatch = createEventDispatcher<{
     highlight: HighlightEvent,
   }>();
 </script>
 
 <div class="code">
-  {#each rules as rule}
+  <input bind:value="{searchFor}" placeholder="Selector filter"/>
+  {#each rulesFiltered as rule}
     <div class="code-line">{rule.selector} &#123;</div>
     {#each rule.properties as property}
       <!-- svelte-ignore a11y-click-events-have-key-events -->
