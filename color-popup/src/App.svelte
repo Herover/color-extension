@@ -268,7 +268,7 @@
           return;
         }
         const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id]);
-        sendSwatch(swatch, tab.id);
+        sendSwatch(swatch, tab.id, activeRules[ruleIndex].properties[propertyIndex].swatchId);
       });
     }
 
@@ -290,7 +290,13 @@
     await storage.setSiteData(siteKey, tabSiteData);
   };
 
-  const sendSwatch = async (swatch: SiteSwatch, tabId?: number) => {
+  /**
+   * Sends swatch colors to given or current tab
+   * @param swatch Swatch to update from
+   * @param tabId Optional tabId to message, when no value is given use current active
+   * @param swatchId Optional swatch color id to update, if none given update all (only for css)
+   */
+  const sendSwatch = async (swatch: SiteSwatch, tabId?: number, swatchId?: string) => {
     if (!swatch) {
       return;
     }
@@ -307,6 +313,9 @@
     // TODO: Consider only sending changed rules
     rules.map(async rule => {
       rule.properties.map(async property => {
+        if (typeof swatchId != "undefined" && property.swatchId != swatchId) {
+          return;
+        }
         await chrome.tabs.sendMessage(tabId, {
           action: "setCSSRule",
           selector: rule.selector,
