@@ -56,7 +56,7 @@ chrome.runtime.onMessage.addListener(
         // Send and clear the message queue
         chrome.storage.session.get([ messageQueueStorageKey ], (data) => {
           sendResponse({ res: data[ messageQueueStorageKey ], origin: window.location.origin });
-          chrome.storage.session.clear([ messageQueueStorageKey ]);
+          chrome.storage.session.remove(messageQueueStorageKey);
         });
 
         // Return true to indicate that we will sendResponse in a callback
