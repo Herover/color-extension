@@ -93,12 +93,10 @@
 
     console.log("response", response);
     const id = tabSiteData.swatches.length + "";
-    const swatch = createSwatchFromRules(response.rules).
-      // @ts-ignore
-      sort((a, b) => chroma(b.hsv).hsv[0] - chroma(a.hsv).hsv[0]);
+    const swatch = createSwatchFromRules(response.rules);
     tabSiteData.swatches[0] = {
       id,
-      name: "Default",
+      name: "Root",
       swatch,
     }
     swatchID = id;
