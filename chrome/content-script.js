@@ -1,7 +1,6 @@
-console.log("hi from content script");
-
 const selectHoverColor = "rgba(255, 0, 0, 0.25)"
 const oldColorKey = "__color_ext_old_bg";
+const messageQueueStorageKey = "__color_ext_message_queue"
 let isSelecting = false;
 let onSelected;
 
@@ -26,55 +25,78 @@ chrome.runtime.onMessage.addListener(
   // otherwise sendResponse wont work as expected.
   // Use callbacks and return 1 for async-ish code.
   (request, sender, sendResponse) => {
-    console.log(request.action, sender.tab ?
-                "from a content script:" + sender.tab.url :
-                "from the extension");
-    if (request.action === "getElement") {
-      onSelected = (el) => {
-        //sendResponse({ element: el });
-        onSelected = undefined;
-      };
-      isSelecting = true;
+    switch (request.action) {
+      case "getElement":
+        // Set the page up to allow the user to select a HTML element
+        startSelecting();
+        sendResponse({ res: "ok", origin: window.location.origin });
+        break;
 
-      sendResponse({ res: "ok", origin: window.location.origin });
-    } else if (request.action === "updateRules") {
-      const defs = getCSSRules((key, val) => isColor(val.toLowerCase().trim()));
-      console.log("defs", defs);
-      sendResponse({ res: "ok", rules: defs, origin: window.location.origin });
-      //chrome.runtime.sendMessage({ action: "rules", rules: defs });
-    } else if (request.action === "updateVariables") {
-      const defs = getCSSRules((key, val) => key.startsWith('--') && isColor(val.toLowerCase().trim()));
-      console.log("defs", defs);
-      sendResponse({ res: "ok", rules: defs, origin: window.location.origin });
-      //chrome.runtime.sendMessage({ action: "rules", rules: defs });
-    } else if (request.action === "setCSSRule") {
-      console.log("setCSSRule", request)
-      setCSSRule(request.selector, request.key, request.value);
-      sendResponse({ res: "ok", origin: window.location.origin });
-    } else if (request.action === "getMessages") {
-      // TODO: clean queue?
-      chrome.storage.session.get([ "messageQueue" ], (data) => {
-        sendResponse({ res: data.messageQueue, origin: window.location.origin });
-        chrome.storage.session.clear([ "messageQueue" ]);
-      });
-      return true;
-    } else if (request.action === "setColors") {
-      window.postMessage(
-        {
-          COLOR_EXT: {
-            action: "setColors",
-            name: "test",
-            type: "ordinal",
-            colors: request.colors,
+      case "updateRules":
+        // Popup is requesting a list of CSS rules
+        const ruleDefs = getCSSRules((key, val) => isColor(val.toLowerCase().trim()));
+        // console.log("defs", ruleDefs);
+        sendResponse({ res: "ok", rules: ruleDefs, origin: window.location.origin });
+        break;
+
+      case "updateVariables":
+        // Popup is requesting a list of CSS rule variables only
+        const variableDefs = getCSSRules((key, val) => key.startsWith('--') && isColor(val.toLowerCase().trim()));
+        // console.log("defs", variableDefs);
+        sendResponse({ res: "ok", rules: variableDefs, origin: window.location.origin });
+        break;
+
+      case "setCSSRule":
+        // Set a CSS rule on the current page
+        setCSSRule(request.selector, request.key, request.value);
+        sendResponse({ res: "ok", origin: window.location.origin });
+        break;
+
+      case "getMessages":
+        // Send and clear the message queue
+        chrome.storage.session.get([ messageQueueStorageKey ], (data) => {
+          sendResponse({ res: data[ messageQueueStorageKey ], origin: window.location.origin });
+          chrome.storage.session.clear([ messageQueueStorageKey ]);
+        });
+
+        // Return true to indicate that we will sendResponse in a callback
+        return true;
+        break;
+  
+      case "setColors":
+        // Notify webpage of changes to a a color subscription
+        window.postMessage(
+          {
+            COLOR_EXT: {
+              action: "setColors",
+              name: "test",
+              type: "ordinal",
+              colors: request.colors,
+            },
           },
-        },
-        window.origin,
-      );
-    } else if (request.action === "getURL") {
-      sendResponse({ res: window.location.href, origin: window.location.origin });
+          window.origin,
+        );
+        break;
+  
+      case "getURL":
+        // Popup requested the current url
+        sendResponse({ res: window.location.href, origin: window.location.origin });
+        break;
+      
+      default:
+        console.warn(`Unrecognized color extension action "${request.action}"`);
+        break;
     }
   }
 );
+
+function startSelecting() {
+  onSelected = (el) => {
+    //sendResponse({ element: el });
+    onSelected = undefined;
+  };
+  isSelecting = true;
+}
 
 function resetElement(target) {
   target.style.backgroundColor = target[oldColorKey];
@@ -186,7 +208,7 @@ window.addEventListener("message", async (event) => {
     if (data.action == "register") {
       if (data.type == "ordinal") {
         const item = { action: "registerOrdinal", colors: data.colors, name: data.name };
-        const key = "messageQueue";
+        const key = messageQueueStorageKey;
         const storedData = await chrome.storage.session.get([key]);
         const queue = storedData[key] || [];
         queue.push(item);
