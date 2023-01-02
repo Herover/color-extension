@@ -377,7 +377,7 @@
     setTimeout(() => sendSwatch(activeSwatch), 1);
   };
 
-  const newSwatch = () => {
+  const newSwatch = (isDependent: boolean) => {
     const newId = tabSiteData.swatches.length + "";
     tabSiteData.swatches.push({
       id: newId,
@@ -390,7 +390,7 @@
         value: e.value,
         alpha: e.alpha,
       })),
-      dependsOn: activeSwatch.id,
+      dependsOn: isDependent ? activeSwatch.id : null,
     });
     tabSiteData = tabSiteData;
     selectSwatch(newId);
@@ -420,7 +420,9 @@
       {/if}
     </button>
   {/each}
-  <button on:click={newSwatch}>+</button>
+  <br>
+  <button on:click={() => newSwatch(false)}>+ copy</button>
+  <button on:click={() => newSwatch(true)}>+ depend</button>
   <br>
   {#if (typeof activeSwatch != "undefined")}
     <ColorWheel
