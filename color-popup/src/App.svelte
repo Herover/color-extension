@@ -248,27 +248,27 @@
     const tabs = await chrome.tabs.query({ url: currentTabURL.res });
     const tabData = await storage.getTabData();
 
-    let ruleIndex = -1;
-    let propertyIndex = -1;
-    for (let groupIndex = 0; groupIndex < activeRules.length; groupIndex++) {
-      const ruleGroup = activeRules[groupIndex];
-      propertyIndex = ruleGroup.properties.findIndex(e => e.swatchId == id);
-      if (propertyIndex != -1) {
-        ruleIndex = groupIndex;
-        break;
-      }
-    }
-    if (ruleIndex != -1 && propertyIndex != -1) {
-      activeRules[ruleIndex].properties[propertyIndex].value = hslColor;
-
-      tabs.forEach(async tab => {
-        if (!tabData.tabToSwatchId["" + tab.id]) {
-          return;
+    swatchItemIDs.forEach(sId => {
+      let ruleIndex = -1;
+      let propertyIndex = -1;
+      for (let groupIndex = 0; groupIndex < activeRules.length; groupIndex++) {
+        const ruleGroup = activeRules[groupIndex];
+        propertyIndex = ruleGroup.properties.findIndex(e => e.swatchId == sId);
+        if (propertyIndex != -1) {
+          ruleIndex = groupIndex;
+          break;
         }
-        const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id]);
-        sendSwatch(swatch, tab.id, activeRules[ruleIndex].properties[propertyIndex].swatchId);
-      });
-    }
+      }
+      if (ruleIndex != -1 && propertyIndex != -1) {
+        tabs.forEach(async tab => {
+          if (!tabData.tabToSwatchId["" + tab.id]) {
+            return;
+          }
+          const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id]);
+          sendSwatch(swatch, tab.id, activeRules[ruleIndex].properties[propertyIndex].swatchId);
+        });
+      }
+    });
 
     // TODO: Only do this if used on a javascript integrated webpage, use registration name
     tabs.forEach(async tab => {
