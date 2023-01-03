@@ -53,14 +53,6 @@
 
 	$: computedColors = colors
 		.map(e => {
-      let chromaColor;
-      try {
-			  chromaColor = chroma(e.color);
-      } catch (e) {
-        console.error(e);
-        return;
-      }
-
 			// const [hue, saturation, value] = chromaColor.hsl();
 			return {
 				x: clamp(0, 1, e.value) * width,
