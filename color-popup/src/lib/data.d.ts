@@ -17,8 +17,15 @@ interface SiteSwatch {
 /**
  * Contains data defining how edited tabs should behave
  */
+export interface TabState {
+  [tabId]: {
+    swatchId: string,
+    highlightedItems: {[string]: boolean},
+  }
+}
+
 export interface TabData {
-  tabToSwatchId: { [string]: string };
+  tabToSwatchId: TabState,
 }
 
 /**

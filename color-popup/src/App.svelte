@@ -7,7 +7,7 @@
   import RuleCode from './lib/RuleCode.svelte';
   import type { SwatchColor } from './lib/swatch';
   import type { Rule } from './lib/rule';
-  import type { SiteData, SiteSwatch } from './lib/data';
+  import type { SiteData, SiteSwatch, TabState } from './lib/data';
   import ColorSlider from './lib/ColorSlider.svelte';
   import { getHSLAString } from './lib/util';
 
@@ -126,8 +126,9 @@
     };
 
     const tabData = await storage.getTabData();
+    highlightedSwatchItems = tabData.tabToSwatchId["" + tab.id]?.highlightedItems || {};
 
-    swatchID = tabData.tabToSwatchId["" + tab.id] || "";
+    swatchID = tabData.tabToSwatchId["" + tab.id]?.swatchId || "";
 
     if (response.res && response.res.length != 0) {
       response.res.forEach(messageData => {
@@ -264,7 +265,7 @@
           if (!tabData.tabToSwatchId["" + tab.id]) {
             return;
           }
-          const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id]);
+          const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id].swatchId);
           sendSwatch(swatch, tab.id, activeRules[ruleIndex].properties[propertyIndex].swatchId);
         });
       }
@@ -275,7 +276,7 @@
       if (!tabData.tabToSwatchId["" + tab.id]) {
         return;
       }
-      const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id]);
+      const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id].swatchId);
       const response = await chrome.tabs.sendMessage(tab.id, {
         action: "setColors",
         colors: swatch.swatch.map(s => ({
@@ -340,10 +341,13 @@
   const updateTabConfig = async () => {
 
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    const tabId = tab.id;
+    const tabId = "" + tab.id;
 
     const tabData = await storage.getTabData();
-    tabData.tabToSwatchId["" + tabId] = swatchID;
+    tabData.tabToSwatchId[tabId] = {
+      swatchId: swatchID,
+      highlightedItems: highlightedSwatchItems,
+    } as TabState;
     return await storage.setTabData(tabData);
   };
 
@@ -366,6 +370,8 @@
     } else {
       highlightedSwatchItems[id] = true;
     }
+
+    updateTabConfig();
   };
 
   const selectSwatch = async (id: string) => {
