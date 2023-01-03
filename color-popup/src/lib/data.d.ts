@@ -1,4 +1,5 @@
 import type { Rule } from "./rule";
+import type { SelectMode } from "./select-mode";
 import type { SwatchColor } from "./swatch";
 
 export interface SiteData {
@@ -21,6 +22,8 @@ export interface TabState {
   [tabId]: {
     swatchId: string,
     highlightedItems: {[string]: boolean},
+    selectMode: SelectMode,
+    selectDeltaE: number,
   }
 }
 

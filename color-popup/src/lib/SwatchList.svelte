@@ -6,6 +6,7 @@
 
   export let swatch = [];
   export let highlighted = {};
+  export let deltaE = 1;
   $: sortedSwatch = swatch
     .map(item => {
       item.lookalikes = [];
@@ -32,7 +33,7 @@
           }
 
           // TODO: Define a constant to use
-          if (chroma.deltaE(color1, color2) < 1) {
+          if (chroma.deltaE(color1, color2) < deltaE) {
             return true;
           }
         })

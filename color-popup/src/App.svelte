@@ -10,6 +10,7 @@
   import type { SiteData, SiteSwatch, TabState } from './lib/data';
   import ColorSlider from './lib/ColorSlider.svelte';
   import { getHSLAString } from './lib/util';
+  import { SelectMode } from './lib/select-mode';
 
   let siteKey = "";
   let swatchID = "";
@@ -23,6 +24,9 @@
   $: activeSwatch = tabSiteData.swatches.find(s => s.id == swatchID);
 
   $: activeRules = swatchID ? getRules(activeSwatch) : [] as Rule[];
+
+  let selectMode: SelectMode = SelectMode.Single;
+  let selectDeltaE = 1;
 
   let highlightedSwatchItems = {};
 
@@ -127,6 +131,8 @@
 
     const tabData = await storage.getTabData();
     highlightedSwatchItems = tabData.tabToSwatchId["" + tab.id]?.highlightedItems || {};
+    selectMode = tabData.tabToSwatchId["" + tab.id]?.selectMode || selectMode;
+    selectDeltaE = tabData.tabToSwatchId["" + tab.id]?.selectDeltaE || selectDeltaE;
 
     swatchID = tabData.tabToSwatchId["" + tab.id]?.swatchId || "";
 
@@ -181,7 +187,6 @@
   $: filteredRules = activeRules.filter(r => r.properties.length != 0);
 
   const updateSwatchItem = async (event: CustomEvent<UpdateColorEvent>) => {
-    console.log(event.detail)
     const { id, hslColor, hue, saturation, value, alpha } = event.detail;
 
     const swatchIndex = activeSwatch.swatch.findIndex(e => e.id == id);
@@ -199,6 +204,10 @@
       
       ids.forEach(sId => {
         const selectedSwatchIndex = swatch.swatch.findIndex(e => e.id == sId);
+        if (selectedSwatchIndex == -1) {
+          console.warn("Tried editing non-existing swatch item", sId)
+          return;
+        }
 
         // Calculate new values, but clamp them within allowed ranges
         const newHue = (swatch.swatch[selectedSwatchIndex].hue - dHue + 360) % 360;
@@ -347,6 +356,8 @@
     tabData.tabToSwatchId[tabId] = {
       swatchId: swatchID,
       highlightedItems: highlightedSwatchItems,
+      selectMode: selectMode,
+      selectDeltaE: selectDeltaE,
     } as TabState;
     return await storage.setTabData(tabData);
   };
@@ -363,16 +374,44 @@
       return;
     }
 
-    if (highlightedSwatchItems[id]) {
-      if (deselect) {
-        highlightedSwatchItems[id] = false;
+    let ids = [];
+
+    if (selectMode == SelectMode.Single) {
+      ids = [id];
+    } else if (selectMode == SelectMode.DeltaE) {
+      const selected = activeSwatch.swatch.find(e => e.id == id);
+
+      // Only select groups, if deltaE mode is used on a selected, deselect it
+      if (highlightedSwatchItems[selected.id]) {
+        highlightedSwatchItems[selected.id] = false;
+        return;
       }
-    } else {
-      highlightedSwatchItems[id] = true;
+
+      ids = activeSwatch
+        .swatch
+        .filter(e => !highlightedSwatchItems[e.id] && chroma.deltaE(selected.color, e.color) <= selectDeltaE)
+        .map(e => e.id);
     }
+
+    ids.forEach(itemId => {
+      if (highlightedSwatchItems[itemId]) {
+        if (deselect) {
+          highlightedSwatchItems[itemId] = false;
+        }
+      } else {
+        highlightedSwatchItems[itemId] = true;
+      }
+    });
 
     updateTabConfig();
   };
+
+  const deselectHighlights = () => {
+    Object
+      .keys(highlightedSwatchItems)
+      .forEach(key => highlightedSwatchItems[key] = false);
+    updateTabConfig();
+  }
 
   const selectSwatch = async (id: string) => {
     swatchID = id;
@@ -430,6 +469,12 @@
   <button on:click={() => newSwatch(false)}>+ copy</button>
   <button on:click={() => newSwatch(true)}>+ depend</button>
   <br>
+  <span>Select mode:</span>
+  <label><input type="radio" bind:group="{selectMode}" value="{SelectMode.Single}">Single</label>
+  <label><input type="radio" bind:group="{selectMode}" value="{SelectMode.DeltaE}">&Delta;E</label>
+  <label>{selectDeltaE} <input type=range bind:value={selectDeltaE} min=0 max=100 step=1></label>
+  <button on:click={deselectHighlights}>Deselect all</button>
+  <br>
   {#if (typeof activeSwatch != "undefined")}
     <ColorWheel
       colors="{activeSwatch.swatch}"
@@ -447,6 +492,7 @@
     <SwatchList
       swatch={activeSwatch.swatch}
       highlighted="{highlightedSwatchItems}"
+      deltaE="{selectDeltaE}"
       on:highlight="{(e) => toggleHighlight(e.detail.id, e.detail.deselectOthers, e.detail.deselect)}"
     />
     <RuleCode
