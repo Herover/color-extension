@@ -45,8 +45,6 @@
   const selectItem = async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const response = await chrome.tabs.sendMessage(tab.id, { action: "getElement" });
-
-    console.log("response", response);
   };
 
   const createSwatchFromRules = (rules): SwatchColor[] => {
@@ -81,7 +79,6 @@
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const response = await chrome.tabs.sendMessage(tab.id, { action: "updateRules" });
 
-    console.log("response", response);
     const swatch = createSwatchFromRules(response.rules);
     const id = tabSiteData.swatches.length + "";
     tabSiteData.swatches.push({
@@ -98,7 +95,6 @@
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const response = await chrome.tabs.sendMessage(tab.id, { action: "updateVariables" });
 
-    console.log("response", response);
     const id = tabSiteData.swatches.length + "";
     const swatch = createSwatchFromRules(response.rules);
     tabSiteData.swatches[0] = {
@@ -173,7 +169,7 @@
             break;
         
           default:
-            console.log("Unknown message type", messageData);
+            console.warn("Unknown message type", messageData);
             break;
         }
       });
@@ -372,7 +368,6 @@
         .forEach(key => key != id && (highlightedSwatchItems[key] = false));
     }
 
-    console.log("id", id, typeof id)
     if (typeof id != "string") {
       return;
     }
