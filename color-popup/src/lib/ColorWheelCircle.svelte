@@ -1,5 +1,6 @@
 <script lang="ts">
     import { createEventDispatcher } from "svelte";
+    import { findC3Color as findC3Colors } from "./c3";
 
 
   export let x;
@@ -7,6 +8,7 @@
   export let id;
   export let color;
   export let highlight;
+  export let showName;
 
   let moved = 0;
 
@@ -42,4 +44,8 @@
   on:mousedown="{() => move()}"
   on:mouseup={() => stop()}
   on:click="{(e) => click(e)}"
-></circle>
+>
+  {#if showName}
+    <title>{findC3Colors(color, 1).map(e => e.name).join(", ")}</title>
+  {/if}
+</circle>

@@ -1,6 +1,7 @@
 <script lang="ts">
     import chroma from "chroma-js";
     import { createEventDispatcher } from "svelte";
+    import { findC3Color as findC3Colors } from "./c3";
 
   const dispatch = createEventDispatcher<{ highlight: HighlightEvent }>();
 
@@ -68,6 +69,7 @@
   <!-- svelte-ignore a11y-click-events-have-key-events -->
   <p
     class:highlight="{highlighted[swatchItem.id]}"
+    title="{findC3Colors(swatchItem.color, 3).map(e => e.name).join(", ")}"
     on:dblclick="{() => dispatch("highlight", { id: swatchItem.id, deselect: true, deselectOthers: false })}"
     on:click="{(e) => e.ctrlKey && dispatch("highlight", { id: swatchItem.id, deselect: true, deselectOthers: false })}"
   >

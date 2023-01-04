@@ -12,6 +12,7 @@
   import { getHSLAString } from './lib/util';
   import { SelectMode } from './lib/select-mode';
   import { load } from 'c3-module';
+  import { findC3Color } from './lib/c3';
 
   const c3 = load()
 
@@ -398,11 +399,11 @@
         return;
       }
 
-      const { termIndex, name } = findC3Color(selected.color);
+      const { termIndex, name } = findC3Color(selected.color)[0];
       console.log(name);
       ids = activeSwatch
         .swatch
-        .filter(e => !highlightedSwatchItems[e.id] && findC3Color(e.color).termIndex == termIndex)
+        .filter(e => !highlightedSwatchItems[e.id] && findC3Color(e.color)[0].termIndex == termIndex)
         .map(e => e.id);
     }
 
@@ -424,23 +425,6 @@
       .keys(highlightedSwatchItems)
       .forEach(key => highlightedSwatchItems[key] = false);
     updateTabConfig();
-  }
-
-  const findC3Color = (color: string): { termIndex: number, name: string } => {
-    const chromaColor = chroma(color);
-    const [L, a, b] = chromaColor.lab();
-    const r = 5; // c3 rounds lab colors to nearest 5 in its index
-    const [rL, ra, rb] = [Math.round(L/r)*r, Math.round(a/r)*r, Math.round(b/r)*r];
-    // TODO: build a lookup table to speed stuff up?
-    const colorIndex = c3.color.findIndex(c => c.l == rL && c.a == ra && c.b == rb);
-    const term = c3.color.relatedTerms(colorIndex, 1)[0];
-    if (!term) {
-      return { name: "unknown", termIndex: -1 };
-    }
-    const termIndex = term.index;
-    const name = c3.terms[termIndex];
-
-    return { name, termIndex };
   }
 
   const selectSwatch = async (id: string) => {
@@ -510,6 +494,7 @@
     <ColorWheel
       colors="{activeSwatch.swatch}"
       highlighted="{highlightedSwatchItems}"
+      showName="{selectMode == SelectMode.Name}"
       on:updateColor="{updateSwatchItem}"
       on:highlight="{(e) => toggleHighlight(e.detail.id, e.detail.deselectOthers, e.detail.deselect)}"
     />
@@ -517,6 +502,7 @@
     <ColorSlider
       colors="{activeSwatch.swatch}"
       highlighted="{highlightedSwatchItems}"
+      showName="{selectMode == SelectMode.Name}"
       on:updateColor="{updateSwatchItem}"
       on:highlight="{(e) => toggleHighlight(e.detail.id, e.detail.deselectOthers, e.detail.deselect)}"
     />

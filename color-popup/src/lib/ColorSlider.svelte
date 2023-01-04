@@ -12,6 +12,8 @@
 
   export let highlighted = {};
 
+  export let showName;
+
 
 	let movingItem = -1;
 
@@ -87,6 +89,7 @@
       x="{color.x}"
       y="{height/2}"
       highlight="{color.highlight}"
+      showName="{showName}"
       on:move="{startSwatchItemMove}"
       on:stop="{endSwatchItemMove}"
       on:highlight

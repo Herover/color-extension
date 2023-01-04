@@ -17,6 +17,8 @@
 
 	export let highlighted = {};
 
+	export let showName;
+
   const dispatch = createEventDispatcher<{ updateColor: UpdateColorEvent, highlight: HighlightEvent }>();
 
 	const startSwatchItemMove = (event: CustomEvent<ColorCircleMoveEvent>) => {
@@ -186,6 +188,7 @@
 				x="{color.x}"
 				y="{color.y}"
 				highlight="{color.highlight}"
+				showName="{showName}"
 				on:move="{startSwatchItemMove}"
 				on:stop="{endSwatchItemMove}"
 				on:highlight
