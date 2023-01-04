@@ -11,6 +11,9 @@
   import ColorSlider from './lib/ColorSlider.svelte';
   import { getHSLAString } from './lib/util';
   import { SelectMode } from './lib/select-mode';
+  import { load } from 'c3-module';
+
+  const c3 = load()
 
   let siteKey = "";
   let swatchID = "";
@@ -391,6 +394,21 @@
         .swatch
         .filter(e => !highlightedSwatchItems[e.id] && chroma.deltaE(selected.color, e.color) <= selectDeltaE)
         .map(e => e.id);
+    } else if (selectMode == SelectMode.Name) {
+      const selected = activeSwatch.swatch.find(e => e.id == id);
+
+      // Only select groups, if deltaE mode is used on a selected, deselect it
+      if (highlightedSwatchItems[selected.id]) {
+        highlightedSwatchItems[selected.id] = false;
+        return;
+      }
+
+      const { termIndex, name } = findC3Color(selected.color);
+      console.log(name);
+      ids = activeSwatch
+        .swatch
+        .filter(e => !highlightedSwatchItems[e.id] && findC3Color(e.color).termIndex == termIndex)
+        .map(e => e.id);
     }
 
     ids.forEach(itemId => {
@@ -411,6 +429,23 @@
       .keys(highlightedSwatchItems)
       .forEach(key => highlightedSwatchItems[key] = false);
     updateTabConfig();
+  }
+
+  const findC3Color = (color: string): { termIndex: number, name: string } => {
+    const chromaColor = chroma(color);
+    const [L, a, b] = chromaColor.lab();
+    const r = 5; // c3 rounds lab colors to nearest 5 in its index
+    const [rL, ra, rb] = [Math.round(L/r)*r, Math.round(a/r)*r, Math.round(b/r)*r];
+    // TODO: build a lookup table to speed stuff up?
+    const colorIndex = c3.color.findIndex(c => c.l == rL && c.a == ra && c.b == rb);
+    const term = c3.color.relatedTerms(colorIndex, 1)[0];
+    if (!term) {
+      return { name: "unknown", termIndex: -1 };
+    }
+    const termIndex = term.index;
+    const name = c3.terms[termIndex];
+
+    return { name, termIndex };
   }
 
   const selectSwatch = async (id: string) => {
@@ -473,6 +508,7 @@
   <label><input type="radio" bind:group="{selectMode}" value="{SelectMode.Single}">Single</label>
   <label><input type="radio" bind:group="{selectMode}" value="{SelectMode.DeltaE}">&Delta;E</label>
   <label>{selectDeltaE} <input type=range bind:value={selectDeltaE} min=0 max=100 step=1></label>
+  <label><input type="radio" bind:group="{selectMode}" value="{SelectMode.Name}">Name</label>
   <button on:click={deselectHighlights}>Deselect all</button>
   <br>
   {#if (typeof activeSwatch != "undefined")}
