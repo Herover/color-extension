@@ -1,7 +1,7 @@
 {
   "name": "Color Palette Editor",
   "description": "For editing color palettes on websites.",
-  "version": "0.1",
+  "version": "0.2",
   "manifest_version": 3,
   "background": {
     "service_worker": "background.js"
