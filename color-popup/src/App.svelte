@@ -13,19 +13,14 @@
   import { SelectMode } from './lib/select-mode';
   import { load } from 'c3-module';
   import { findC3Color } from './lib/c3';
+  import { siteData } from './lib/store';
 
   const c3 = load()
 
   let siteKey = "";
   let swatchID = "";
 
-  let tabSiteData: SiteData = {
-    swatches: [],
-    rules: [],
-    ordinal: [],
-  };
-
-  $: activeSwatch = tabSiteData.swatches.find(s => s.id == swatchID);
+  $: activeSwatch = $siteData.swatches.find(s => s.id == swatchID);
 
   $: activeRules = swatchID ? getRules(activeSwatch) : [] as Rule[];
 
@@ -34,7 +29,7 @@
 
   let highlightedSwatchItems = {};
 
-  const getRules = (swatch: SiteSwatch): Rule[] => tabSiteData.rules.map(r => ({
+  const getRules = (swatch: SiteSwatch): Rule[] => $siteData.rules.map(r => ({
     selector: r.selector,
     properties: r.properties.map(p => ({
       key: p.key,
@@ -81,14 +76,14 @@
     const response = await chrome.tabs.sendMessage(tab.id, { action: "updateRules" });
 
     const swatch = createSwatchFromRules(response.rules);
-    const id = tabSiteData.swatches.length + "";
-    tabSiteData.swatches.push({
+    const id = $siteData.swatches.length + "";
+    siteData.addSwatch({
       id,
       name: "Root",
       swatch,
     });
     swatchID = id;
-    tabSiteData.rules = response.rules;
+    siteData.setRules(response.rules);
 
     await updateTabConfig();
   };
@@ -96,15 +91,15 @@
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     const response = await chrome.tabs.sendMessage(tab.id, { action: "updateVariables" });
 
-    const id = tabSiteData.swatches.length + "";
     const swatch = createSwatchFromRules(response.rules);
-    tabSiteData.swatches[0] = {
+    const id = $siteData.swatches.length + "";
+    siteData.addSwatch({
       id,
       name: "Root",
       swatch,
-    }
+    });
     swatchID = id;
-    tabSiteData.rules = response.rules;
+    siteData.setRules(response.rules);
 
     await updateTabConfig();
   };
@@ -122,12 +117,12 @@
     });
     siteKey = response.origin;
 
-    const siteData = await storage.getSiteData(siteKey);
-    tabSiteData = siteData || {
+    const siteDataFromStore = await storage.getSiteData(siteKey);
+    siteData.setData(siteDataFromStore || {
       swatches: [],
       rules: [],
       ordinal: [],
-    };
+    });
 
     const tabData = await storage.getTabData();
     highlightedSwatchItems = tabData.tabToSwatchId["" + tab.id]?.highlightedItems || {};
@@ -140,7 +135,7 @@
       response.res.forEach(messageData => {
         switch (messageData.action) {
           case "registerOrdinal":
-            if (tabSiteData.swatches.find(o => o.id == messageData.name)) {
+            if ($siteData.swatches.find(o => o.id == messageData.name)) {
               // If we already have this swatch, don't re-register it automatically
               console.warn("ignoring " + messageData.action)
               break;
@@ -148,8 +143,8 @@
             const message = messageData as MessageRegisterOrdinal;
             swatchID = messageData.name;
             
-            tabSiteData.ordinal = message.colors;
-            tabSiteData.swatches.push({
+            siteData.setOridnal(message.colors);
+            siteData.addSwatch({
               id: swatchID,
               name: messageData.name,
               swatch: message.colors.map((color, i) => {
@@ -180,7 +175,7 @@
     // this function, use a timeout to wait for it to happen before sending swatch
     setTimeout(() => sendSwatch(activeSwatch), 1);
     // FIXME: data seems to gete deleted unless saved at least once?
-    await storage.setSiteData(siteKey, tabSiteData);
+    await storage.setSiteData(siteKey, $siteData);
     await updateTabConfig();
   });
 
@@ -239,7 +234,7 @@
 
     const recurseSwatches = (currentSwatch) => {
       updateSwatch(currentSwatch, swatchItemIDs);
-      tabSiteData.swatches.forEach(swatch => {
+      $siteData.swatches.forEach(swatch => {
         if (swatch.dependsOn == currentSwatch.id) {
           recurseSwatches(swatch);
         }
@@ -247,7 +242,7 @@
     };
     recurseSwatches(activeSwatch);
 
-    tabSiteData = tabSiteData;
+    siteData.refresh()
 
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     
@@ -274,7 +269,7 @@
           if (!tabData.tabToSwatchId["" + tab.id]) {
             return;
           }
-          const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id].swatchId);
+          const swatch = $siteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id].swatchId);
           sendSwatch(swatch, tab.id, activeRules[ruleIndex].properties[propertyIndex].swatchId);
         });
       }
@@ -285,7 +280,7 @@
       if (!tabData.tabToSwatchId["" + tab.id]) {
         return;
       }
-      const swatch = tabSiteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id].swatchId);
+      const swatch = $siteData.swatches.find(e => e.id == tabData.tabToSwatchId["" + tab.id].swatchId);
       const response = await chrome.tabs.sendMessage(tab.id, {
         action: "setColors",
         colors: swatch.swatch.map(s => ({
@@ -295,7 +290,7 @@
       });
     });
 
-    await storage.setSiteData(siteKey, tabSiteData);
+    await storage.setSiteData(siteKey, $siteData);
   };
 
   /**
@@ -437,10 +432,10 @@
   };
 
   const newSwatch = (isDependent: boolean) => {
-    const newId = tabSiteData.swatches.length + "";
-    tabSiteData.swatches.push({
+    const newId = $siteData.swatches.length + "";
+    siteData.addSwatch({
       id: newId,
-      name: tabSiteData.swatches.length + "",
+      name: $siteData.swatches.length + "",
       swatch: activeSwatch.swatch.map(e => ({
         id: e.id,
         color: e.color,
@@ -451,12 +446,12 @@
       })),
       dependsOn: isDependent ? activeSwatch.id : null,
     });
-    tabSiteData = tabSiteData;
+
     selectSwatch(newId);
   };
 
   const nameOfSwatch = (swatchID: string) => {
-    return tabSiteData.swatches.find(swatch => swatch.id == swatchID).name;
+    return $siteData.swatches.find(swatch => swatch.id == swatchID).name;
   };
 </script>
 
@@ -467,7 +462,7 @@
   <button on:click="{removeData}">Clear store</button>
   <br>
   <p>Swatches for site</p>
-  {#each tabSiteData.swatches as swatch}
+  {#each $siteData.swatches as swatch}
     <button on:click={() => selectSwatch(swatch.id)}>
       {#if swatchID == swatch.id}
         <b>{swatch.name}</b>
